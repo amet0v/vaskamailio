@@ -39,10 +39,6 @@ public class RouterView extends VerticalLayout {
 
         add(routerEntityGrid);
 
-        add(routerEntityGrid);
-
-        //routerEntityGrid.removeAllColumns();
-
         routerEntityGrid.addColumn(RouterEntity::getId)
                 .setHeader("ID")
                 .setWidth("5%")
@@ -126,8 +122,12 @@ public class RouterView extends VerticalLayout {
         TextField routeSetidField = new TextField("SetID example");
         TextField routeDescriptionField = new TextField("Description example");
 
+        routeCidField.setHelperText("example cid");
+        routeDidField.setHelperText("example did");
+        routeSetidField.setHelperText("example setid");
+        routeDescriptionField.setHelperText("example desc");
+
         dialogLayout.add(routeCidField, routeDidField, routeSetidField, routeDescriptionField);
-        dialogLayout.setWidth("50vh");
 
         Button saveButton = new Button("Сохранить", e -> {
             String cid = routeCidField.isEmpty() ? null : routeCidField.getValue();
@@ -135,7 +135,15 @@ public class RouterView extends VerticalLayout {
             String setid = routeSetidField.isEmpty() ? null : routeSetidField.getValue();
             String description = routeDescriptionField.isEmpty() ? null : routeDescriptionField.getValue();
 
-            createRoute(routerRepository, cid, did, setid, description);
+            try {
+                createRoute(routerRepository, cid, did, setid == null || setid.isEmpty() ? null : Integer.valueOf(setid), description);
+
+                Notification.show("Запись успешно создана", 5000, Notification.Position.BOTTOM_END)
+                        .addThemeVariants(NotificationVariant.LUMO_SUCCESS);
+            } catch (NumberFormatException exception) {
+                Notification.show("Ошибка: невозможно преобразовать SetID в число", 5000, Notification.Position.BOTTOM_END)
+                        .addThemeVariants(NotificationVariant.LUMO_SUCCESS);
+            }
 
             grid.setItems(routerRepository.findAll());
         });
@@ -172,7 +180,7 @@ public class RouterView extends VerticalLayout {
 
         routeCidField.setValue(route.getCid() == null ? "" : route.getCid());
         routeDidField.setValue(route.getDid() == null ? "" : route.getDid());
-        routeSetidField.setValue(route.getSetid() == null ? "" : route.getSetid());
+        routeSetidField.setValue(route.getSetid() == null ? "" : String.valueOf(route.getSetid()));
         routeDescriptionField.setValue(route.getDescription() == null ? "" : route.getDescription());
 
         dialogLayout.add(routeCidField, routeDidField, routeSetidField, routeDescriptionField);
@@ -183,7 +191,15 @@ public class RouterView extends VerticalLayout {
             String setid = routeSetidField.isEmpty() ? null : routeSetidField.getValue();
             String description = routeDescriptionField.isEmpty() ? null : routeDescriptionField.getValue();
 
-            editRoute(routerRepository, route.getId(), cid, did, setid, description);
+            try {
+                editRoute(routerRepository, route.getId(), cid, did, setid == null || setid.isEmpty() ? null : Integer.valueOf(setid), description);
+
+                Notification.show("Запись успешно создана", 5000, Notification.Position.BOTTOM_END)
+                        .addThemeVariants(NotificationVariant.LUMO_SUCCESS);
+            } catch (NumberFormatException exception) {
+                Notification.show("Ошибка: невозможно преобразовать SetID в число", 5000, Notification.Position.BOTTOM_END)
+                        .addThemeVariants(NotificationVariant.LUMO_SUCCESS);
+            }
 
             grid.setItems(routerRepository.findAll());
             dialog.close();
@@ -194,10 +210,6 @@ public class RouterView extends VerticalLayout {
         dialog.getFooter().add(saveButton, cancelButton);
 
         Button editRouteButton = new Button("✏\uFE0F", e -> {
-//            routeCidField.clear();
-//            routeDidField.clear();
-//            routeSetidField.clear();
-//            routeDescriptionField.clear();
             dialog.open();
         });
 
@@ -206,7 +218,7 @@ public class RouterView extends VerticalLayout {
         return editRouteButton;
     }
 
-    private Button deleteRouteButton(RouterRepository routerRepository, Grid<RouterEntity> grid, RouterEntity route){
+    private Button deleteRouteButton(RouterRepository routerRepository, Grid<RouterEntity> grid, RouterEntity route) {
         Dialog dialog = new Dialog();
         dialog.setHeaderTitle("Delete entity");
 
@@ -229,10 +241,6 @@ public class RouterView extends VerticalLayout {
         dialog.getFooter().add(deleteButton, cancelButton);
 
         Button deleteRouteButton = new Button("❌", e -> {
-//            routeCidField.clear();
-//            routeDidField.clear();
-//            routeSetidField.clear();
-//            routeDescriptionField.clear();
             dialog.open();
         });
 

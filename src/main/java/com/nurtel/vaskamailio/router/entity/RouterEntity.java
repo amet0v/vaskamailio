@@ -13,9 +13,9 @@ import lombok.*;
 public class RouterEntity {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    Long id;
-    String cid;
-    String did;
-    String setid;
-    String description;
+    protected Long id;
+    protected String cid;
+    protected String did;
+    protected Integer setid;
+    protected String description;
 }

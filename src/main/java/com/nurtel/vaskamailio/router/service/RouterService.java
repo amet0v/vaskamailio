@@ -12,7 +12,7 @@ public class RouterService {
             RouterRepository routerRepository,
             String cid,
             String did,
-            String setid,
+            Integer setid,
             String description
     ) {
         RouterEntity route = RouterEntity.builder()
@@ -31,7 +31,7 @@ public class RouterService {
             Long id,
             String cid,
             String did,
-            String setid,
+            Integer setid,
             String description
     ) {
         Optional<RouterEntity> optionalRoute = routerRepository.findById(id);
