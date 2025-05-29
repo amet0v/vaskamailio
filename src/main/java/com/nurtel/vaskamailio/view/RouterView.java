@@ -130,13 +130,19 @@ public class RouterView extends VerticalLayout {
         dialogLayout.add(routeCidField, routeDidField, routeSetidField, routeDescriptionField);
 
         Button saveButton = new Button("Сохранить", e -> {
+            //можно заменить "" на null и обратно
             String cid = routeCidField.isEmpty() ? null : routeCidField.getValue();
             String did = routeDidField.isEmpty() ? null : routeDidField.getValue();
             String setid = routeSetidField.isEmpty() ? null : routeSetidField.getValue();
             String description = routeDescriptionField.isEmpty() ? null : routeDescriptionField.getValue();
+            if (setid == null){
+                Notification.show("Ошибка: SetID не может быть пустым", 5000, Notification.Position.BOTTOM_END)
+                        .addThemeVariants(NotificationVariant.LUMO_ERROR);
+                return;
+            }
 
             try {
-                createRoute(routerRepository, cid, did, setid == null || setid.isEmpty() ? null : Integer.valueOf(setid), description);
+                createRoute(routerRepository, cid, did, Integer.valueOf(setid), description);
 
                 Notification.show("Запись успешно создана", 5000, Notification.Position.BOTTOM_END)
                         .addThemeVariants(NotificationVariant.LUMO_SUCCESS);
@@ -186,13 +192,19 @@ public class RouterView extends VerticalLayout {
         dialogLayout.add(routeCidField, routeDidField, routeSetidField, routeDescriptionField);
 
         Button saveButton = new Button("Сохранить", e -> {
+            //можно заменить "" на null и обратно
             String cid = routeCidField.isEmpty() ? null : routeCidField.getValue();
             String did = routeDidField.isEmpty() ? null : routeDidField.getValue();
             String setid = routeSetidField.isEmpty() ? null : routeSetidField.getValue();
             String description = routeDescriptionField.isEmpty() ? null : routeDescriptionField.getValue();
+            if (setid == null){
+                Notification.show("Ошибка: SetID не может быть пустым", 5000, Notification.Position.BOTTOM_END)
+                        .addThemeVariants(NotificationVariant.LUMO_ERROR);
+                return;
+            }
 
             try {
-                editRoute(routerRepository, route.getId(), cid, did, setid == null || setid.isEmpty() ? null : Integer.valueOf(setid), description);
+                editRoute(routerRepository, route.getId(), cid, did, Integer.valueOf(setid), description);
 
                 Notification.show("Запись успешно создана", 5000, Notification.Position.BOTTOM_END)
                         .addThemeVariants(NotificationVariant.LUMO_SUCCESS);

@@ -52,6 +52,6 @@ public class RouterService {
             Long id
     ) {
         Optional<RouterEntity> optionalRoute = routerRepository.findById(id);
-        optionalRoute.ifPresent(routerEntity -> routerRepository.deleteById(routerEntity.getId()));
+        if (optionalRoute.isPresent()) routerRepository.deleteById(id);
     }
 }
