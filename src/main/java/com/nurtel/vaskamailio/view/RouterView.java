@@ -14,6 +14,7 @@ import com.vaadin.flow.component.notification.Notification;
 import com.vaadin.flow.component.notification.NotificationVariant;
 import com.vaadin.flow.component.orderedlayout.HorizontalLayout;
 import com.vaadin.flow.component.orderedlayout.VerticalLayout;
+import com.vaadin.flow.component.textfield.IntegerField;
 import com.vaadin.flow.component.textfield.TextField;
 import com.vaadin.flow.router.PageTitle;
 import com.vaadin.flow.router.Route;
@@ -117,10 +118,15 @@ public class RouterView extends VerticalLayout {
         VerticalLayout dialogLayout = new VerticalLayout();
         dialog.add(dialogLayout);
 
-        TextField routeCidField = new TextField("CID example");
-        TextField routeDidField = new TextField("DID example");
-        TextField routeSetidField = new TextField("SetID example");
-        TextField routeDescriptionField = new TextField("Description example");
+        TextField routeCidField = new TextField("CID");
+        TextField routeDidField = new TextField("DID");
+
+        IntegerField routeSetidField = new IntegerField("SetID");
+        routeSetidField.setStepButtonsVisible(true);
+        routeSetidField.setValue(0);
+        routeSetidField.setMin(0);
+
+        TextField routeDescriptionField = new TextField("Description");
 
         routeCidField.setHelperText("example cid");
         routeDidField.setHelperText("example did");
@@ -133,35 +139,37 @@ public class RouterView extends VerticalLayout {
             //можно заменить "" на null и обратно
             String cid = routeCidField.isEmpty() ? null : routeCidField.getValue();
             String did = routeDidField.isEmpty() ? null : routeDidField.getValue();
-            String setid = routeSetidField.isEmpty() ? null : routeSetidField.getValue();
+            Integer setid = routeSetidField.getValue();
             String description = routeDescriptionField.isEmpty() ? null : routeDescriptionField.getValue();
-            if (setid == null){
+            if (setid == null) {
                 Notification.show("Ошибка: SetID не может быть пустым", 5000, Notification.Position.BOTTOM_END)
                         .addThemeVariants(NotificationVariant.LUMO_ERROR);
                 return;
             }
 
             try {
-                createRoute(routerRepository, cid, did, Integer.valueOf(setid), description);
+                createRoute(routerRepository, cid, did, setid, description);
 
                 Notification.show("Запись успешно создана", 5000, Notification.Position.BOTTOM_END)
                         .addThemeVariants(NotificationVariant.LUMO_SUCCESS);
             } catch (NumberFormatException exception) {
                 Notification.show("Ошибка: невозможно преобразовать SetID в число", 5000, Notification.Position.BOTTOM_END)
-                        .addThemeVariants(NotificationVariant.LUMO_SUCCESS);
+                        .addThemeVariants(NotificationVariant.LUMO_ERROR);
             }
 
             grid.setItems(routerRepository.findAll());
         });
         saveButton.addThemeVariants(ButtonVariant.LUMO_PRIMARY);
-        Button cancelButton = new Button("Отмена", e -> dialog.close());
+        Button cancelButton = new Button("Отмена", e -> {
+            routeSetidField.clear();
+            dialog.close();
+        });
         cancelButton.addThemeVariants(ButtonVariant.LUMO_ERROR);
         dialog.getFooter().add(saveButton, cancelButton);
 
         Button addRouteButton = new Button("Добавить", e -> {
             routeCidField.clear();
             routeDidField.clear();
-            routeSetidField.clear();
             routeDescriptionField.clear();
             dialog.open();
         });
@@ -181,12 +189,22 @@ public class RouterView extends VerticalLayout {
 
         TextField routeCidField = new TextField("CID example");
         TextField routeDidField = new TextField("DID example");
-        TextField routeSetidField = new TextField("SetID example");
-        TextField routeDescriptionField = new TextField("Description example");
+
+        IntegerField routeSetidField = new IntegerField("SetID");
+        routeSetidField.setStepButtonsVisible(true);
+        routeSetidField.setValue(0);
+        routeSetidField.setMin(0);
+
+        TextField routeDescriptionField = new TextField("Description");
+
+        routeCidField.setHelperText("example cid");
+        routeDidField.setHelperText("example did");
+        routeSetidField.setHelperText("example setid");
+        routeDescriptionField.setHelperText("example desc");
 
         routeCidField.setValue(route.getCid() == null ? "" : route.getCid());
         routeDidField.setValue(route.getDid() == null ? "" : route.getDid());
-        routeSetidField.setValue(route.getSetid() == null ? "" : String.valueOf(route.getSetid()));
+        routeSetidField.setValue(route.getSetid() == null ? 0 : route.getSetid());
         routeDescriptionField.setValue(route.getDescription() == null ? "" : route.getDescription());
 
         dialogLayout.add(routeCidField, routeDidField, routeSetidField, routeDescriptionField);
@@ -195,22 +213,22 @@ public class RouterView extends VerticalLayout {
             //можно заменить "" на null и обратно
             String cid = routeCidField.isEmpty() ? null : routeCidField.getValue();
             String did = routeDidField.isEmpty() ? null : routeDidField.getValue();
-            String setid = routeSetidField.isEmpty() ? null : routeSetidField.getValue();
+            Integer setid = routeSetidField.getValue();
             String description = routeDescriptionField.isEmpty() ? null : routeDescriptionField.getValue();
-            if (setid == null){
+            if (setid == null) {
                 Notification.show("Ошибка: SetID не может быть пустым", 5000, Notification.Position.BOTTOM_END)
                         .addThemeVariants(NotificationVariant.LUMO_ERROR);
                 return;
             }
 
             try {
-                editRoute(routerRepository, route.getId(), cid, did, Integer.valueOf(setid), description);
+                editRoute(routerRepository, route.getId(), cid, did, setid, description);
 
                 Notification.show("Запись успешно создана", 5000, Notification.Position.BOTTOM_END)
                         .addThemeVariants(NotificationVariant.LUMO_SUCCESS);
             } catch (NumberFormatException exception) {
                 Notification.show("Ошибка: невозможно преобразовать SetID в число", 5000, Notification.Position.BOTTOM_END)
-                        .addThemeVariants(NotificationVariant.LUMO_SUCCESS);
+                        .addThemeVariants(NotificationVariant.LUMO_ERROR);
             }
 
             grid.setItems(routerRepository.findAll());

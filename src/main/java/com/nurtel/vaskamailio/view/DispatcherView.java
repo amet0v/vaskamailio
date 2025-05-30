@@ -11,20 +11,30 @@ import com.vaadin.flow.component.grid.GridVariant;
 import com.vaadin.flow.component.html.Div;
 import com.vaadin.flow.component.notification.Notification;
 import com.vaadin.flow.component.notification.NotificationVariant;
+import com.vaadin.flow.component.orderedlayout.HorizontalLayout;
 import com.vaadin.flow.component.orderedlayout.VerticalLayout;
+import com.vaadin.flow.component.textfield.IntegerField;
 import com.vaadin.flow.component.textfield.TextField;
 import com.vaadin.flow.router.PageTitle;
 import com.vaadin.flow.router.Route;
 
-import static com.nurtel.vaskamailio.dispatcher.service.DispatcherService.deleteDispatcherEntity;
+import static com.nurtel.vaskamailio.dispatcher.service.DispatcherService.*;
 
 @Route(value = "/dispatcher", layout = MainLayout.class)
 @PageTitle("Kamailio | Dispatcher")
 public class DispatcherView extends VerticalLayout {
+    public static Button addButton = new Button();
+
     public DispatcherView(DispatcherRepository dispatcherRepository) {
-        add("WORK IN PROGRESS");
         Grid<DispatcherEntity> dispatcherEntityGrid = new Grid<>(DispatcherEntity.class, false);
         dispatcherEntityGrid.getStyle().set("height", "80vh");
+
+        addButton = createDispatcherButton(dispatcherRepository, dispatcherEntityGrid);
+
+        HorizontalLayout horizontalLayout = new HorizontalLayout();
+        horizontalLayout.add(addButton);
+        add(horizontalLayout);
+
         add(dispatcherEntityGrid);
 
         dispatcherEntityGrid.addColumn(DispatcherEntity::getId)
@@ -69,8 +79,8 @@ public class DispatcherView extends VerticalLayout {
                 .setSortable(true)
                 .setResizable(true);
 
-        dispatcherEntityGrid.addComponentColumn(routerEntity -> {
-                    Button editButton = new Button("✏\uFE0F");
+        dispatcherEntityGrid.addComponentColumn(entity -> {
+                    Button editButton = editDispatcherButton(dispatcherRepository, dispatcherEntityGrid, entity);
                     editButton.addThemeVariants(ButtonVariant.LUMO_WARNING);
                     editButton.getElement().getStyle()
                             .set("font-size", "20px");
@@ -88,8 +98,8 @@ public class DispatcherView extends VerticalLayout {
                 .setWidth("10%")
                 .setFlexGrow(0);
 
-        dispatcherEntityGrid.addComponentColumn(routerEntity -> {
-                    Button deleteButton = new Button("❌");
+        dispatcherEntityGrid.addComponentColumn(entity -> {
+                    Button deleteButton = deleteDispatcherButton(dispatcherRepository, dispatcherEntityGrid, entity);
                     deleteButton.addThemeVariants(ButtonVariant.LUMO_ERROR);
                     deleteButton.getElement().getStyle()
                             .set("font-size", "20px");
@@ -113,115 +123,193 @@ public class DispatcherView extends VerticalLayout {
         dispatcherEntityGrid.addThemeVariants(GridVariant.LUMO_ROW_STRIPES);
     }
 
-//    private Button createRouteButton(DispatcherRepository dispatcherRepository, Grid<DispatcherEntity> grid) {
-//        Dialog dialog = new Dialog();
-//        dialog.setHeaderTitle("New entity");
-//
-//        VerticalLayout dialogLayout = new VerticalLayout();
-//        dialog.add(dialogLayout);
-//
-//        TextField routeCidField = new TextField("CID example");
-//        TextField routeDidField = new TextField("DID example");
-//        TextField routeSetidField = new TextField("SetID example");
-//        TextField routeDescriptionField = new TextField("Description example");
-//
-//        routeCidField.setHelperText("example cid");
-//        routeDidField.setHelperText("example did");
-//        routeSetidField.setHelperText("example setid");
-//        routeDescriptionField.setHelperText("example desc");
-//
-//        dialogLayout.add(routeCidField, routeDidField, routeSetidField, routeDescriptionField);
-//
-//        Button saveButton = new Button("Сохранить", e -> {
-//            String cid = routeCidField.isEmpty() ? null : routeCidField.getValue();
-//            String did = routeDidField.isEmpty() ? null : routeDidField.getValue();
-//            String setid = routeSetidField.isEmpty() ? null : routeSetidField.getValue();
-//            String description = routeDescriptionField.isEmpty() ? null : routeDescriptionField.getValue();
-//
-//            try {
-//                createRoute(routerRepository, cid, did, setid == null || setid.isEmpty() ? null : Integer.valueOf(setid), description);
-//
-//                Notification.show("Запись успешно создана", 5000, Notification.Position.BOTTOM_END)
-//                        .addThemeVariants(NotificationVariant.LUMO_SUCCESS);
-//            } catch (NumberFormatException exception) {
-//                Notification.show("Ошибка: невозможно преобразовать SetID в число", 5000, Notification.Position.BOTTOM_END)
-//                        .addThemeVariants(NotificationVariant.LUMO_SUCCESS);
-//            }
-//
-//            grid.setItems(routerRepository.findAll());
-//        });
-//        saveButton.addThemeVariants(ButtonVariant.LUMO_PRIMARY);
-//        Button cancelButton = new Button("Отмена", e -> dialog.close());
-//        cancelButton.addThemeVariants(ButtonVariant.LUMO_ERROR);
-//        dialog.getFooter().add(saveButton, cancelButton);
-//
-//        Button addRouteButton = new Button("Добавить", e -> {
-//            routeCidField.clear();
-//            routeDidField.clear();
-//            routeSetidField.clear();
-//            routeDescriptionField.clear();
-//            dialog.open();
-//        });
-//        addRouteButton.addThemeVariants(ButtonVariant.LUMO_PRIMARY);
-//
-//        add(dialog);
-//
-//        return addRouteButton;
-//    }
-//
-//    private Button editRouteButton(DispatcherRepository dispatcherRepository, Grid<DispatcherEntity> grid, DispatcherEntity dispatcherEntity) {
-//        Dialog dialog = new Dialog();
-//        dialog.setHeaderTitle("Edit entity");
-//
-//        VerticalLayout dialogLayout = new VerticalLayout();
-//        dialog.add(dialogLayout);
-//
-//        TextField routeCidField = new TextField("CID example");
-//        TextField routeDidField = new TextField("DID example");
-//        TextField routeSetidField = new TextField("SetID example");
-//        TextField routeDescriptionField = new TextField("Description example");
-//
-//        routeCidField.setValue(route.getCid() == null ? "" : route.getCid());
-//        routeDidField.setValue(route.getDid() == null ? "" : route.getDid());
-//        routeSetidField.setValue(route.getSetid() == null ? "" : String.valueOf(route.getSetid()));
-//        routeDescriptionField.setValue(route.getDescription() == null ? "" : route.getDescription());
-//
-//        dialogLayout.add(routeCidField, routeDidField, routeSetidField, routeDescriptionField);
-//
-//        Button saveButton = new Button("Сохранить", e -> {
-//            String cid = routeCidField.isEmpty() ? null : routeCidField.getValue();
-//            String did = routeDidField.isEmpty() ? null : routeDidField.getValue();
-//            String setid = routeSetidField.isEmpty() ? null : routeSetidField.getValue();
-//            String description = routeDescriptionField.isEmpty() ? null : routeDescriptionField.getValue();
-//
-//            try {
-//                editRoute(routerRepository, route.getId(), cid, did, setid == null || setid.isEmpty() ? null : Integer.valueOf(setid), description);
-//
-//                Notification.show("Запись успешно создана", 5000, Notification.Position.BOTTOM_END)
-//                        .addThemeVariants(NotificationVariant.LUMO_SUCCESS);
-//            } catch (NumberFormatException exception) {
-//                Notification.show("Ошибка: невозможно преобразовать SetID в число", 5000, Notification.Position.BOTTOM_END)
-//                        .addThemeVariants(NotificationVariant.LUMO_SUCCESS);
-//            }
-//
-//            grid.setItems(routerRepository.findAll());
-//            dialog.close();
-//        });
-//        saveButton.addThemeVariants(ButtonVariant.LUMO_PRIMARY);
-//        Button cancelButton = new Button("Отмена", e -> dialog.close());
-//        cancelButton.addThemeVariants(ButtonVariant.LUMO_ERROR);
-//        dialog.getFooter().add(saveButton, cancelButton);
-//
-//        Button editRouteButton = new Button("✏\uFE0F", e -> {
-//            dialog.open();
-//        });
-//
-//        add(dialog);
-//
-//        return editRouteButton;
-//    }
+    private Button createDispatcherButton(DispatcherRepository dispatcherRepository, Grid<DispatcherEntity> grid) {
+        Dialog dialog = new Dialog();
+        dialog.setHeaderTitle("New entity");
 
-    private Button deleteRouteButton(DispatcherRepository dispatcherRepository, Grid<DispatcherEntity> grid, DispatcherEntity dispatcherEntity) {
+        VerticalLayout dialogLayout = new VerticalLayout();
+        dialog.add(dialogLayout);
+
+        IntegerField setidField = new IntegerField("SetID");
+        setidField.setStepButtonsVisible(true);
+        setidField.setValue(0);
+        setidField.setMin(0);
+//        setidField.setMax(255);
+
+        TextField destinationField = new TextField("Destination");
+
+        IntegerField flagsField = new IntegerField("Flags");
+        flagsField.setStepButtonsVisible(true);
+        flagsField.setValue(0);
+        flagsField.setMin(0);
+//        flagsField.setMax(255);
+
+        IntegerField priorityField = new IntegerField("Priority");
+        priorityField.setStepButtonsVisible(true);
+        priorityField.setValue(0);
+        priorityField.setMin(0);
+//        priorityField.setMax(255);
+
+        TextField attrsField = new TextField("Attrs");
+        TextField descriptionField = new TextField("Description");
+
+        setidField.setHelperText("example setid");
+        destinationField.setHelperText("example destination");
+        flagsField.setHelperText("example flags");
+        priorityField.setHelperText("example priority");
+        attrsField.setHelperText("example attrs");
+        descriptionField.setHelperText("example description");
+
+        dialogLayout.add(setidField, destinationField, flagsField, priorityField, attrsField, descriptionField);
+
+        Button saveButton = new Button("Сохранить", e -> {
+
+            Integer setid = setidField.getValue();
+            String destination = destinationField.isEmpty() ? null : destinationField.getValue();
+            Integer flags = flagsField.getValue();
+            Integer priority = priorityField.getValue();
+            String attrs = attrsField.isEmpty() ? null : attrsField.getValue();
+            String description = descriptionField.isEmpty() ? null : descriptionField.getValue();
+
+            if (setid == null || flags == null || priority == null) {
+                Notification.show("Ошибка: невозможно создать запись с значением null", 5000, Notification.Position.BOTTOM_END)
+                        .addThemeVariants(NotificationVariant.LUMO_ERROR);
+                return;
+            }
+
+            try {
+                createDispatcherEntity(
+                        dispatcherRepository,
+                        setid,
+                        destination,
+                        flags,
+                        priority,
+                        attrs,
+                        description
+                );
+                Notification.show("Запись успешно создана", 5000, Notification.Position.BOTTOM_END)
+                        .addThemeVariants(NotificationVariant.LUMO_SUCCESS);
+            } catch (NumberFormatException | NullPointerException exception) {
+                Notification.show("Ошибка: Невозможно преобразовать в число", 5000, Notification.Position.BOTTOM_END)
+                        .addThemeVariants(NotificationVariant.LUMO_ERROR);
+            }
+
+            grid.setItems(dispatcherRepository.findAll());
+        });
+        saveButton.addThemeVariants(ButtonVariant.LUMO_PRIMARY);
+        Button cancelButton = new Button("Отмена", e ->
+        {
+            setidField.clear();
+            priorityField.clear();
+            flagsField.clear();
+            dialog.close();
+        });
+        cancelButton.addThemeVariants(ButtonVariant.LUMO_ERROR);
+        dialog.getFooter().add(saveButton, cancelButton);
+
+        Button addRouteButton = new Button("Добавить", e -> {
+            destinationField.clear();
+            attrsField.clear();
+            descriptionField.clear();
+            dialog.open();
+        });
+        addRouteButton.addThemeVariants(ButtonVariant.LUMO_PRIMARY);
+
+        add(dialog);
+
+        return addRouteButton;
+    }
+
+    private Button editDispatcherButton(DispatcherRepository dispatcherRepository, Grid<DispatcherEntity> grid, DispatcherEntity dispatcherEntity) {
+        Dialog dialog = new Dialog();
+        dialog.setHeaderTitle("Edit entity");
+
+        VerticalLayout dialogLayout = new VerticalLayout();
+        dialog.add(dialogLayout);
+
+        IntegerField setidField = new IntegerField("SetID");
+        setidField.setStepButtonsVisible(true);
+        setidField.setValue(0);
+        setidField.setMin(0);
+//        setidField.setMax(255);
+
+        TextField destinationField = new TextField("Destination");
+
+        IntegerField flagsField = new IntegerField("Flags");
+        flagsField.setStepButtonsVisible(true);
+        flagsField.setValue(0);
+        flagsField.setMin(0);
+//        flagsField.setMax(255);
+
+        IntegerField priorityField = new IntegerField("Priority");
+        priorityField.setStepButtonsVisible(true);
+        priorityField.setValue(0);
+        priorityField.setMin(0);
+//        priorityField.setMax(255);
+
+        TextField attrsField = new TextField("Attrs");
+        TextField descriptionField = new TextField("Description");
+
+        setidField.setHelperText("example setid");
+        destinationField.setHelperText("example destination");
+        flagsField.setHelperText("example flags");
+        priorityField.setHelperText("example priority");
+        attrsField.setHelperText("example attrs");
+        descriptionField.setHelperText("example description");
+
+        setidField.setValue(dispatcherEntity.getSetid() == null ? 0 : dispatcherEntity.getSetid());
+        destinationField.setValue(dispatcherEntity.getDestination() == null ? "" : dispatcherEntity.getDestination());
+        flagsField.setValue(dispatcherEntity.getFlags() == null ? 0 : dispatcherEntity.getFlags());
+        priorityField.setValue(dispatcherEntity.getPriority() == null ? 0 : dispatcherEntity.getPriority());
+        attrsField.setValue(dispatcherEntity.getAttrs() == null ? "" : dispatcherEntity.getAttrs());
+        descriptionField.setValue(dispatcherEntity.getDescription() == null ? "" : dispatcherEntity.getDescription());
+
+        dialogLayout.add(setidField, destinationField, flagsField, priorityField, attrsField, descriptionField);
+
+        Button saveButton = new Button("Сохранить", e -> {
+            Integer setid = setidField.getValue();
+            String destination = destinationField.isEmpty() ? null : destinationField.getValue();
+            Integer flags = flagsField.getValue();
+            Integer priority = priorityField.getValue();
+            String attrs = attrsField.isEmpty() ? null : attrsField.getValue();
+            String description = descriptionField.isEmpty() ? null : descriptionField.getValue();
+
+            try {
+                editDispatcherEntity(
+                        dispatcherRepository,
+                        dispatcherEntity.getId(),
+                        setid,
+                        destination,
+                        flags,
+                        priority,
+                        attrs,
+                        description
+                );
+                Notification.show("Запись успешно изменена", 5000, Notification.Position.BOTTOM_END)
+                        .addThemeVariants(NotificationVariant.LUMO_SUCCESS);
+            } catch (NumberFormatException | NullPointerException exception) {
+                Notification.show("Ошибка: Невозможно преобразовать в число", 5000, Notification.Position.BOTTOM_END)
+                        .addThemeVariants(NotificationVariant.LUMO_ERROR);
+            }
+
+            grid.setItems(dispatcherRepository.findAll());
+            dialog.close();
+        });
+        saveButton.addThemeVariants(ButtonVariant.LUMO_PRIMARY);
+        Button cancelButton = new Button("Отмена", e -> dialog.close());
+        cancelButton.addThemeVariants(ButtonVariant.LUMO_ERROR);
+        dialog.getFooter().add(saveButton, cancelButton);
+
+        Button editRouteButton = new Button("✏\uFE0F", e -> {
+            dialog.open();
+        });
+
+        add(dialog);
+
+        return editRouteButton;
+    }
+
+    private Button deleteDispatcherButton(DispatcherRepository dispatcherRepository, Grid<DispatcherEntity> grid, DispatcherEntity dispatcherEntity) {
         Dialog dialog = new Dialog();
         dialog.setHeaderTitle("Delete entity");
 
