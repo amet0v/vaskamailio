@@ -17,6 +17,7 @@ import com.vaadin.flow.component.textfield.IntegerField;
 import com.vaadin.flow.component.textfield.TextField;
 import com.vaadin.flow.router.PageTitle;
 import com.vaadin.flow.router.Route;
+import org.springframework.data.domain.Sort;
 
 import static com.nurtel.vaskamailio.dispatcher.service.DispatcherService.*;
 
@@ -70,7 +71,7 @@ public class DispatcherView extends VerticalLayout {
 
         dispatcherEntityGrid.addColumn(DispatcherEntity::getAttrs)
                 .setHeader("Attrs")
-                .setFlexGrow(0)
+                //.setFlexGrow(0)
                 .setSortable(true)
                 .setResizable(true);
 
@@ -117,7 +118,7 @@ public class DispatcherView extends VerticalLayout {
                 .setWidth("10%")
                 .setFlexGrow(0);
 
-        dispatcherEntityGrid.setItems(dispatcherRepository.findAll());
+        dispatcherEntityGrid.setItems(dispatcherRepository.findAll(Sort.by("id")));
 
         dispatcherEntityGrid.addThemeVariants(GridVariant.LUMO_COLUMN_BORDERS);
         dispatcherEntityGrid.addThemeVariants(GridVariant.LUMO_ROW_STRIPES);
@@ -126,39 +127,19 @@ public class DispatcherView extends VerticalLayout {
     private Button createDispatcherButton(DispatcherRepository dispatcherRepository, Grid<DispatcherEntity> grid) {
         Dialog dialog = new Dialog();
         dialog.setHeaderTitle("New entity");
+        dialog.setDraggable(true);
 
         VerticalLayout dialogLayout = new VerticalLayout();
         dialog.add(dialogLayout);
 
         IntegerField setidField = new IntegerField("SetID");
-        setidField.setStepButtonsVisible(true);
-        setidField.setValue(0);
-        setidField.setMin(0);
-//        setidField.setMax(255);
-
         TextField destinationField = new TextField("Destination");
-
         IntegerField flagsField = new IntegerField("Flags");
-        flagsField.setStepButtonsVisible(true);
-        flagsField.setValue(0);
-        flagsField.setMin(0);
-//        flagsField.setMax(255);
-
         IntegerField priorityField = new IntegerField("Priority");
-        priorityField.setStepButtonsVisible(true);
-        priorityField.setValue(0);
-        priorityField.setMin(0);
-//        priorityField.setMax(255);
-
         TextField attrsField = new TextField("Attrs");
         TextField descriptionField = new TextField("Description");
 
-        setidField.setHelperText("example setid");
-        destinationField.setHelperText("example destination");
-        flagsField.setHelperText("example flags");
-        priorityField.setHelperText("example priority");
-        attrsField.setHelperText("example attrs");
-        descriptionField.setHelperText("example description");
+        customizeFields(setidField, destinationField, flagsField, priorityField, attrsField, descriptionField);
 
         dialogLayout.add(setidField, destinationField, flagsField, priorityField, attrsField, descriptionField);
 
@@ -168,10 +149,10 @@ public class DispatcherView extends VerticalLayout {
             String destination = destinationField.isEmpty() ? null : destinationField.getValue();
             Integer flags = flagsField.getValue();
             Integer priority = priorityField.getValue();
-            String attrs = attrsField.isEmpty() ? null : attrsField.getValue();
-            String description = descriptionField.isEmpty() ? null : descriptionField.getValue();
+            String attrs = attrsField.isEmpty() ? "" : attrsField.getValue();
+            String description = descriptionField.isEmpty() ? "" : descriptionField.getValue();
 
-            if (setid == null || flags == null || priority == null) {
+            if (setid == null || flags == null || priority == null || destination == null) {
                 Notification.show("Ошибка: невозможно создать запись с значением null", 5000, Notification.Position.BOTTOM_END)
                         .addThemeVariants(NotificationVariant.LUMO_ERROR);
                 return;
@@ -194,7 +175,7 @@ public class DispatcherView extends VerticalLayout {
                         .addThemeVariants(NotificationVariant.LUMO_ERROR);
             }
 
-            grid.setItems(dispatcherRepository.findAll());
+            grid.setItems(dispatcherRepository.findAll(Sort.by("id")));
         });
         saveButton.addThemeVariants(ButtonVariant.LUMO_PRIMARY);
         Button cancelButton = new Button("Отмена", e ->
@@ -209,7 +190,7 @@ public class DispatcherView extends VerticalLayout {
 
         Button addRouteButton = new Button("Добавить", e -> {
             destinationField.clear();
-            attrsField.clear();
+//            attrsField.clear();
             descriptionField.clear();
             dialog.open();
         });
@@ -223,39 +204,19 @@ public class DispatcherView extends VerticalLayout {
     private Button editDispatcherButton(DispatcherRepository dispatcherRepository, Grid<DispatcherEntity> grid, DispatcherEntity dispatcherEntity) {
         Dialog dialog = new Dialog();
         dialog.setHeaderTitle("Edit entity");
+        dialog.setDraggable(true);
 
         VerticalLayout dialogLayout = new VerticalLayout();
         dialog.add(dialogLayout);
 
         IntegerField setidField = new IntegerField("SetID");
-        setidField.setStepButtonsVisible(true);
-        setidField.setValue(0);
-        setidField.setMin(0);
-//        setidField.setMax(255);
-
         TextField destinationField = new TextField("Destination");
-
         IntegerField flagsField = new IntegerField("Flags");
-        flagsField.setStepButtonsVisible(true);
-        flagsField.setValue(0);
-        flagsField.setMin(0);
-//        flagsField.setMax(255);
-
         IntegerField priorityField = new IntegerField("Priority");
-        priorityField.setStepButtonsVisible(true);
-        priorityField.setValue(0);
-        priorityField.setMin(0);
-//        priorityField.setMax(255);
-
         TextField attrsField = new TextField("Attrs");
         TextField descriptionField = new TextField("Description");
 
-        setidField.setHelperText("example setid");
-        destinationField.setHelperText("example destination");
-        flagsField.setHelperText("example flags");
-        priorityField.setHelperText("example priority");
-        attrsField.setHelperText("example attrs");
-        descriptionField.setHelperText("example description");
+        customizeFields(setidField, destinationField, flagsField, priorityField, attrsField, descriptionField);
 
         setidField.setValue(dispatcherEntity.getSetid() == null ? 0 : dispatcherEntity.getSetid());
         destinationField.setValue(dispatcherEntity.getDestination() == null ? "" : dispatcherEntity.getDestination());
@@ -271,7 +232,7 @@ public class DispatcherView extends VerticalLayout {
             String destination = destinationField.isEmpty() ? null : destinationField.getValue();
             Integer flags = flagsField.getValue();
             Integer priority = priorityField.getValue();
-            String attrs = attrsField.isEmpty() ? null : attrsField.getValue();
+            String attrs = attrsField.isEmpty() ? "" : attrsField.getValue();
             String description = descriptionField.isEmpty() ? null : descriptionField.getValue();
 
             try {
@@ -292,7 +253,7 @@ public class DispatcherView extends VerticalLayout {
                         .addThemeVariants(NotificationVariant.LUMO_ERROR);
             }
 
-            grid.setItems(dispatcherRepository.findAll());
+            grid.setItems(dispatcherRepository.findAll(Sort.by("id")));
             dialog.close();
         });
         saveButton.addThemeVariants(ButtonVariant.LUMO_PRIMARY);
@@ -323,7 +284,7 @@ public class DispatcherView extends VerticalLayout {
         Button deleteButton = new Button("Удалить", e -> {
             deleteDispatcherEntity(dispatcherRepository, dispatcherEntity.getId());
 
-            grid.setItems(dispatcherRepository.findAll());
+            grid.setItems(dispatcherRepository.findAll(Sort.by("id")));
             dialog.close();
         });
         deleteButton.addThemeVariants(ButtonVariant.LUMO_PRIMARY, ButtonVariant.LUMO_ERROR);
@@ -338,5 +299,44 @@ public class DispatcherView extends VerticalLayout {
         add(dialog);
 
         return deleteRouteButton;
+    }
+
+    private void customizeFields(
+            IntegerField setidField,
+            TextField destinationField,
+            IntegerField flagsField,
+            IntegerField priorityField,
+            TextField attrsField,
+            TextField descriptionField
+    ) {
+
+        setidField.setStepButtonsVisible(true);
+        setidField.setValue(0);
+        setidField.setMin(0);
+        setidField.setWidth("255px");
+
+        destinationField.setWidth("255px");
+
+        flagsField.setStepButtonsVisible(true);
+        flagsField.setValue(0);
+        flagsField.setMin(0);
+        flagsField.setWidth("255px");
+
+        priorityField.setStepButtonsVisible(true);
+        priorityField.setValue(0);
+        priorityField.setMin(0);
+        priorityField.setWidth("255px");
+
+        attrsField.setValue("socket=udp:172.27.201.166:5060");
+        attrsField.setWidth("255px");
+
+        descriptionField.setWidth("255px");
+
+//        setidField.setHelperText("0-999");
+        destinationField.setHelperText("sip:172.27.x.x:5060");
+        flagsField.setHelperText("0 - default");
+//        priorityField.setHelperText("example priority");
+        attrsField.setHelperText("socket=udp:172.27.201.166:5060");
+        descriptionField.setHelperText("hostname");
     }
 }
