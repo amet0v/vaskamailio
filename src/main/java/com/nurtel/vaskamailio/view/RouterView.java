@@ -5,7 +5,6 @@ import com.nurtel.vaskamailio.router.repository.RouterRepository;
 import com.vaadin.flow.component.Text;
 import com.vaadin.flow.component.button.Button;
 import com.vaadin.flow.component.button.ButtonVariant;
-import com.vaadin.flow.component.combobox.ComboBox;
 import com.vaadin.flow.component.dialog.Dialog;
 import com.vaadin.flow.component.grid.Grid;
 import com.vaadin.flow.component.grid.GridVariant;
@@ -18,6 +17,7 @@ import com.vaadin.flow.component.textfield.IntegerField;
 import com.vaadin.flow.component.textfield.TextField;
 import com.vaadin.flow.router.PageTitle;
 import com.vaadin.flow.router.Route;
+import org.springframework.data.domain.Sort;
 
 import static com.nurtel.vaskamailio.router.service.RouterService.*;
 
@@ -47,13 +47,13 @@ public class RouterView extends VerticalLayout {
                 .setSortable(true)
                 .setResizable(true);
 
-        routerEntityGrid.addColumn(RouterEntity::getCid)
-                .setHeader("CID")
+        routerEntityGrid.addColumn(RouterEntity::getDid)
+                .setHeader("DID")
                 .setSortable(true)
                 .setResizable(true);
 
-        routerEntityGrid.addColumn(RouterEntity::getDid)
-                .setHeader("DID")
+        routerEntityGrid.addColumn(RouterEntity::getCid)
+                .setHeader("CID")
                 .setSortable(true)
                 .setResizable(true);
 
@@ -105,7 +105,7 @@ public class RouterView extends VerticalLayout {
                 .setWidth("10%")
                 .setFlexGrow(0);
 
-        routerEntityGrid.setItems(routerRepository.findAll());
+        routerEntityGrid.setItems(routerRepository.findAll(Sort.by("id")));
 
         routerEntityGrid.addThemeVariants(GridVariant.LUMO_COLUMN_BORDERS);
         routerEntityGrid.addThemeVariants(GridVariant.LUMO_ROW_STRIPES);
@@ -118,29 +118,21 @@ public class RouterView extends VerticalLayout {
         VerticalLayout dialogLayout = new VerticalLayout();
         dialog.add(dialogLayout);
 
-        TextField routeCidField = new TextField("CID");
-        TextField routeDidField = new TextField("DID");
+        TextField cidField = new TextField("CID example");
+        TextField didField = new TextField("DID example");
+        IntegerField setidField = new IntegerField("SetID");
+        TextField descriptionField = new TextField("Description");
 
-        IntegerField routeSetidField = new IntegerField("SetID");
-        routeSetidField.setStepButtonsVisible(true);
-        routeSetidField.setValue(0);
-        routeSetidField.setMin(0);
+        customizeFields(cidField, didField, setidField, descriptionField);
 
-        TextField routeDescriptionField = new TextField("Description");
-
-        routeCidField.setHelperText("example cid");
-        routeDidField.setHelperText("example did");
-        routeSetidField.setHelperText("example setid");
-        routeDescriptionField.setHelperText("example desc");
-
-        dialogLayout.add(routeCidField, routeDidField, routeSetidField, routeDescriptionField);
+        dialogLayout.add(didField, cidField, setidField, descriptionField);
 
         Button saveButton = new Button("Сохранить", e -> {
             //можно заменить "" на null и обратно
-            String cid = routeCidField.isEmpty() ? null : routeCidField.getValue();
-            String did = routeDidField.isEmpty() ? null : routeDidField.getValue();
-            Integer setid = routeSetidField.getValue();
-            String description = routeDescriptionField.isEmpty() ? null : routeDescriptionField.getValue();
+            String cid = cidField.isEmpty() ? null : cidField.getValue();
+            String did = didField.isEmpty() ? null : didField.getValue();
+            Integer setid = setidField.getValue();
+            String description = descriptionField.isEmpty() ? null : descriptionField.getValue();
             if (setid == null) {
                 Notification.show("Ошибка: SetID не может быть пустым", 5000, Notification.Position.BOTTOM_END)
                         .addThemeVariants(NotificationVariant.LUMO_ERROR);
@@ -157,20 +149,20 @@ public class RouterView extends VerticalLayout {
                         .addThemeVariants(NotificationVariant.LUMO_ERROR);
             }
 
-            grid.setItems(routerRepository.findAll());
+            grid.setItems(routerRepository.findAll(Sort.by("id")));
         });
         saveButton.addThemeVariants(ButtonVariant.LUMO_PRIMARY);
         Button cancelButton = new Button("Отмена", e -> {
-            routeSetidField.clear();
+            setidField.clear();
             dialog.close();
         });
         cancelButton.addThemeVariants(ButtonVariant.LUMO_ERROR);
         dialog.getFooter().add(saveButton, cancelButton);
 
         Button addRouteButton = new Button("Добавить", e -> {
-            routeCidField.clear();
-            routeDidField.clear();
-            routeDescriptionField.clear();
+            cidField.clear();
+            didField.clear();
+            descriptionField.clear();
             dialog.open();
         });
         addRouteButton.addThemeVariants(ButtonVariant.LUMO_PRIMARY);
@@ -187,34 +179,26 @@ public class RouterView extends VerticalLayout {
         VerticalLayout dialogLayout = new VerticalLayout();
         dialog.add(dialogLayout);
 
-        TextField routeCidField = new TextField("CID example");
-        TextField routeDidField = new TextField("DID example");
+        TextField cidField = new TextField("CID example");
+        TextField didField = new TextField("DID example");
+        IntegerField setidField = new IntegerField("SetID");
+        TextField descriptionField = new TextField("Description");
 
-        IntegerField routeSetidField = new IntegerField("SetID");
-        routeSetidField.setStepButtonsVisible(true);
-        routeSetidField.setValue(0);
-        routeSetidField.setMin(0);
+        customizeFields(cidField, didField, setidField, descriptionField);
 
-        TextField routeDescriptionField = new TextField("Description");
+        cidField.setValue(route.getCid() == null ? "" : route.getCid());
+        didField.setValue(route.getDid() == null ? "" : route.getDid());
+        setidField.setValue(route.getSetid() == null ? 0 : route.getSetid());
+        descriptionField.setValue(route.getDescription() == null ? "" : route.getDescription());
 
-        routeCidField.setHelperText("example cid");
-        routeDidField.setHelperText("example did");
-        routeSetidField.setHelperText("example setid");
-        routeDescriptionField.setHelperText("example desc");
-
-        routeCidField.setValue(route.getCid() == null ? "" : route.getCid());
-        routeDidField.setValue(route.getDid() == null ? "" : route.getDid());
-        routeSetidField.setValue(route.getSetid() == null ? 0 : route.getSetid());
-        routeDescriptionField.setValue(route.getDescription() == null ? "" : route.getDescription());
-
-        dialogLayout.add(routeCidField, routeDidField, routeSetidField, routeDescriptionField);
+        dialogLayout.add(didField, cidField, setidField, descriptionField);
 
         Button saveButton = new Button("Сохранить", e -> {
             //можно заменить "" на null и обратно
-            String cid = routeCidField.isEmpty() ? null : routeCidField.getValue();
-            String did = routeDidField.isEmpty() ? null : routeDidField.getValue();
-            Integer setid = routeSetidField.getValue();
-            String description = routeDescriptionField.isEmpty() ? null : routeDescriptionField.getValue();
+            String cid = cidField.isEmpty() ? null : cidField.getValue();
+            String did = didField.isEmpty() ? null : didField.getValue();
+            Integer setid = setidField.getValue();
+            String description = descriptionField.isEmpty() ? null : descriptionField.getValue();
             if (setid == null) {
                 Notification.show("Ошибка: SetID не может быть пустым", 5000, Notification.Position.BOTTOM_END)
                         .addThemeVariants(NotificationVariant.LUMO_ERROR);
@@ -231,7 +215,7 @@ public class RouterView extends VerticalLayout {
                         .addThemeVariants(NotificationVariant.LUMO_ERROR);
             }
 
-            grid.setItems(routerRepository.findAll());
+            grid.setItems(routerRepository.findAll(Sort.by("id")));
             dialog.close();
         });
         saveButton.addThemeVariants(ButtonVariant.LUMO_PRIMARY);
@@ -262,7 +246,7 @@ public class RouterView extends VerticalLayout {
         Button deleteButton = new Button("Удалить", e -> {
             deleteRoute(routerRepository, route.getId());
 
-            grid.setItems(routerRepository.findAll());
+            grid.setItems(routerRepository.findAll(Sort.by("id")));
             dialog.close();
         });
         deleteButton.addThemeVariants(ButtonVariant.LUMO_PRIMARY, ButtonVariant.LUMO_ERROR);
@@ -279,4 +263,19 @@ public class RouterView extends VerticalLayout {
         return deleteRouteButton;
     }
 
+    private void customizeFields(
+            TextField cidField,
+            TextField didField,
+            IntegerField setidField,
+            TextField descriptionField
+    ) {
+        setidField.setStepButtonsVisible(true);
+        setidField.setValue(0);
+        setidField.setMin(0);
+
+        cidField.setHelperText("example cid");
+        didField.setHelperText("example did");
+        setidField.setHelperText("example setid");
+        descriptionField.setHelperText("example desc");
+    }
 }
