@@ -10,15 +10,15 @@ import java.util.Optional;
 public class RouterService {
     public static RouterEntity createRoute(
             RouterRepository routerRepository,
-            String cid,
             String did,
             Integer setid,
             String description
     ) {
         RouterEntity route = RouterEntity.builder()
-                .cid(cid)
                 .did(did)
-                .setid(setid)
+                .keyType(0)
+                .valueType(1)
+                .setid(String.valueOf(setid))
                 .description(description)
                 .build();
 
@@ -29,7 +29,6 @@ public class RouterService {
     public static Optional<RouterEntity> editRoute(
             RouterRepository routerRepository,
             Long id,
-            String cid,
             String did,
             Integer setid,
             String description
@@ -38,9 +37,10 @@ public class RouterService {
         if (optionalRoute.isEmpty()) return Optional.empty();
         RouterEntity route = optionalRoute.get();
 
-        route.setCid(cid);
         route.setDid(did);
-        route.setSetid(setid);
+        route.setKeyType(0);
+        route.setValueType(1);
+        route.setSetid(String.valueOf(setid));
         route.setDescription(description);
 
         route = routerRepository.save(route);

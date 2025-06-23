@@ -48,17 +48,26 @@ public class RouterView extends VerticalLayout {
                 .setResizable(true);
 
         routerEntityGrid.addColumn(RouterEntity::getDid)
-                .setHeader("DID")
+                .setHeader("DID (key)")
                 .setSortable(true)
                 .setResizable(true);
 
-        routerEntityGrid.addColumn(RouterEntity::getCid)
-                .setHeader("CID")
+        routerEntityGrid.addColumn(RouterEntity::getKeyType)
+                .setHeader("Key type")
+                .setWidth("10%")
+                .setFlexGrow(0)
+                .setSortable(true)
+                .setResizable(true);
+
+        routerEntityGrid.addColumn(RouterEntity::getValueType)
+                .setHeader("Value type")
+                .setWidth("10%")
+                .setFlexGrow(0)
                 .setSortable(true)
                 .setResizable(true);
 
         routerEntityGrid.addColumn(RouterEntity::getSetid)
-                .setHeader("SetID")
+                .setHeader("SetID (value)")
                 .setSortable(true)
                 .setResizable(true);
 
@@ -118,18 +127,16 @@ public class RouterView extends VerticalLayout {
         VerticalLayout dialogLayout = new VerticalLayout();
         dialog.add(dialogLayout);
 
-        TextField cidField = new TextField("CID example");
-        TextField didField = new TextField("DID example");
+        TextField didField = new TextField("DID");
         IntegerField setidField = new IntegerField("SetID");
         TextField descriptionField = new TextField("Description");
 
-        customizeFields(cidField, didField, setidField, descriptionField);
+        customizeFields(didField, setidField, descriptionField);
 
-        dialogLayout.add(didField, cidField, setidField, descriptionField);
+        dialogLayout.add(didField, setidField, descriptionField);
 
         Button saveButton = new Button("Сохранить", e -> {
             //можно заменить "" на null и обратно
-            String cid = cidField.isEmpty() ? null : cidField.getValue();
             String did = didField.isEmpty() ? null : didField.getValue();
             Integer setid = setidField.getValue();
             String description = descriptionField.isEmpty() ? null : descriptionField.getValue();
@@ -140,7 +147,7 @@ public class RouterView extends VerticalLayout {
             }
 
             try {
-                createRoute(routerRepository, cid, did, setid, description);
+                createRoute(routerRepository, did, setid, description);
 
                 Notification.show("Запись успешно создана", 5000, Notification.Position.BOTTOM_END)
                         .addThemeVariants(NotificationVariant.LUMO_SUCCESS);
@@ -160,7 +167,7 @@ public class RouterView extends VerticalLayout {
         dialog.getFooter().add(saveButton, cancelButton);
 
         Button addRouteButton = new Button("Добавить", e -> {
-            cidField.clear();
+//            cidField.clear();
             didField.clear();
             descriptionField.clear();
             dialog.open();
@@ -179,23 +186,20 @@ public class RouterView extends VerticalLayout {
         VerticalLayout dialogLayout = new VerticalLayout();
         dialog.add(dialogLayout);
 
-        TextField cidField = new TextField("CID example");
-        TextField didField = new TextField("DID example");
+        TextField didField = new TextField("DID");
         IntegerField setidField = new IntegerField("SetID");
         TextField descriptionField = new TextField("Description");
 
-        customizeFields(cidField, didField, setidField, descriptionField);
+        customizeFields(didField, setidField, descriptionField);
 
-        cidField.setValue(route.getCid() == null ? "" : route.getCid());
         didField.setValue(route.getDid() == null ? "" : route.getDid());
-        setidField.setValue(route.getSetid() == null ? 0 : route.getSetid());
+        setidField.setValue(route.getSetid() == null ? 0 : Integer.parseInt(route.getSetid()));
         descriptionField.setValue(route.getDescription() == null ? "" : route.getDescription());
 
-        dialogLayout.add(didField, cidField, setidField, descriptionField);
+        dialogLayout.add(didField, setidField, descriptionField);
 
         Button saveButton = new Button("Сохранить", e -> {
             //можно заменить "" на null и обратно
-            String cid = cidField.isEmpty() ? null : cidField.getValue();
             String did = didField.isEmpty() ? null : didField.getValue();
             Integer setid = setidField.getValue();
             String description = descriptionField.isEmpty() ? null : descriptionField.getValue();
@@ -206,7 +210,7 @@ public class RouterView extends VerticalLayout {
             }
 
             try {
-                editRoute(routerRepository, route.getId(), cid, did, setid, description);
+                editRoute(routerRepository, route.getId(), did, setid, description);
 
                 Notification.show("Запись успешно создана", 5000, Notification.Position.BOTTOM_END)
                         .addThemeVariants(NotificationVariant.LUMO_SUCCESS);
@@ -264,7 +268,6 @@ public class RouterView extends VerticalLayout {
     }
 
     private void customizeFields(
-            TextField cidField,
             TextField didField,
             IntegerField setidField,
             TextField descriptionField
@@ -273,9 +276,8 @@ public class RouterView extends VerticalLayout {
         setidField.setValue(0);
         setidField.setMin(0);
 
-        cidField.setHelperText("example cid");
-        didField.setHelperText("example did");
-        setidField.setHelperText("example setid");
-        descriptionField.setHelperText("example desc");
+//        didField.setHelperText("example: 17888");
+//        setidField.setHelperText("example setid");
+//        descriptionField.setHelperText("example desc");
     }
 }

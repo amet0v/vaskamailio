@@ -9,13 +9,24 @@ import lombok.*;
 @AllArgsConstructor
 @Builder
 @Entity
-@Table(name = "router")
+@Table(name = "ht_router")
 public class RouterEntity {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    protected Long id;
-    protected String cid;
-    protected String did;
-    protected Integer setid;
-    protected String description;
+    private Long id;
+
+    @Column(name = "key_name", nullable = false)
+    private String did;
+
+    @Column(name = "key_type", nullable = false)
+    private Integer keyType = 0;
+
+    @Column(name = "value_type", nullable = false)
+    private Integer valueType = 0;
+
+    @Column(name = "key_value")
+    private String setid;
+
+    @Column(name = "description")
+    private String description;
 }
