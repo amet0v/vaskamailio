@@ -10,7 +10,7 @@
 	</parent>
 	<groupId>com.nurtel</groupId>
 	<artifactId>vaskamailio</artifactId>
-	<version>0.0.1-SNAPSHOT</version>
+	<version>1.0.0-RELEASE</version>
 	<name>vaskamailio</name>
 	<description>WEB UI for Kamailio</description>
 	<url/>
@@ -117,6 +117,13 @@
 			<plugin>
 				<groupId>org.springframework.boot</groupId>
 				<artifactId>spring-boot-maven-plugin</artifactId>
+			</plugin>
+			<plugin>
+				<groupId>org.springframework.boot</groupId>
+				<artifactId>spring-boot-maven-plugin</artifactId>
+				<configuration>
+					<jvmArguments>--enable-native-access=ALL-UNNAMED</jvmArguments>
+				</configuration>
 			</plugin>
 		</plugins>
 	</build>
