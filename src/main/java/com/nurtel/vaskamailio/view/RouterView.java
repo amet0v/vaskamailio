@@ -9,6 +9,7 @@ import com.vaadin.flow.component.dialog.Dialog;
 import com.vaadin.flow.component.grid.Grid;
 import com.vaadin.flow.component.grid.GridVariant;
 import com.vaadin.flow.component.html.Div;
+import com.vaadin.flow.component.icon.Icon;
 import com.vaadin.flow.component.notification.Notification;
 import com.vaadin.flow.component.notification.NotificationVariant;
 import com.vaadin.flow.component.orderedlayout.HorizontalLayout;
@@ -29,14 +30,12 @@ import static com.nurtel.vaskamailio.router.service.RouterService.*;
 public class RouterView extends VerticalLayout {
     ListDataProvider<RouterEntity> dataProvider;
     public static Button addButton = new Button();
-//    public static Button deleteButton = new Button();
-//    public static Button editButton = new Button();
 
     public RouterView(RouterRepository routerRepository) {
         Grid<RouterEntity> routerEntityGrid = new Grid<>(RouterEntity.class, false);
         routerEntityGrid.getStyle().set("height", "80vh");
 
-        addButton = createRouteButton(routerRepository, routerEntityGrid);
+        addButton = createRouteButton(routerRepository);
 
         List<RouterEntity> items = routerRepository.findAll(Sort.by("id"));
         dataProvider = new ListDataProvider<>(items);
@@ -63,6 +62,8 @@ public class RouterView extends VerticalLayout {
 
         routerEntityGrid.addColumn(RouterEntity::getDid)
                 .setHeader("DID (key)")
+                .setWidth("20%")
+                .setFlexGrow(0)
                 .setSortable(true)
                 .setResizable(true);
 
@@ -82,6 +83,8 @@ public class RouterView extends VerticalLayout {
 
         routerEntityGrid.addColumn(RouterEntity::getSetid)
                 .setHeader("SetID (value)")
+                .setWidth("20%")
+                .setFlexGrow(0)
                 .setSortable(true)
                 .setResizable(true);
 
@@ -91,7 +94,7 @@ public class RouterView extends VerticalLayout {
                 .setResizable(true);
 
         routerEntityGrid.addComponentColumn(routerEntity -> {
-                    Button editButton = editRouteButton(routerRepository, routerEntityGrid, routerEntity);
+                    Button editButton = editRouteButton(routerRepository, routerEntity);
                     editButton.addThemeVariants(ButtonVariant.LUMO_WARNING);
                     editButton.getElement().getStyle()
                             .set("font-size", "20px");
@@ -110,7 +113,7 @@ public class RouterView extends VerticalLayout {
                 .setFlexGrow(0);
 
         routerEntityGrid.addComponentColumn(routerEntity -> {
-                    Button deleteButton = deleteRouteButton(routerRepository, routerEntityGrid, routerEntity);
+                    Button deleteButton = deleteRouteButton(routerRepository, routerEntity);
                     deleteButton.addThemeVariants(ButtonVariant.LUMO_ERROR);
                     deleteButton.getElement().getStyle()
                             .set("font-size", "20px");
@@ -137,6 +140,7 @@ public class RouterView extends VerticalLayout {
     private TextField getFilterField() {
         TextField filterField = new TextField();
         filterField.setPlaceholder("Поиск...");
+        filterField.setPrefixComponent(new Icon("lumo", "search"));
         filterField.setClearButtonVisible(true);
         filterField.setWidth("300px");
         filterField.addValueChangeListener(e ->
@@ -148,7 +152,7 @@ public class RouterView extends VerticalLayout {
         return filterField;
     }
 
-    private Button createRouteButton(RouterRepository routerRepository, Grid<RouterEntity> grid) {
+    private Button createRouteButton(RouterRepository routerRepository) {
         Dialog dialog = new Dialog();
         dialog.setHeaderTitle("New entity");
 
@@ -168,8 +172,8 @@ public class RouterView extends VerticalLayout {
             String did = didField.isEmpty() ? null : didField.getValue();
             Integer setid = setidField.getValue();
             String description = descriptionField.isEmpty() ? null : descriptionField.getValue();
-            if (setid == null) {
-                Notification.show("Ошибка: SetID не может быть пустым", 5000, Notification.Position.BOTTOM_END)
+            if (did == null) {
+                Notification.show("Ошибка: DID не может быть пустым", 5000, Notification.Position.BOTTOM_END)
                         .addThemeVariants(NotificationVariant.LUMO_ERROR);
                 return;
             }
@@ -180,7 +184,7 @@ public class RouterView extends VerticalLayout {
                 Notification.show("Запись успешно создана", 5000, Notification.Position.BOTTOM_END)
                         .addThemeVariants(NotificationVariant.LUMO_SUCCESS);
             } catch (NumberFormatException exception) {
-                Notification.show("Ошибка: невозможно преобразовать SetID в число", 5000, Notification.Position.BOTTOM_END)
+                Notification.show(exception.toString(), 5000, Notification.Position.BOTTOM_END)
                         .addThemeVariants(NotificationVariant.LUMO_ERROR);
             }
             refreshGrid(routerRepository, dataProvider);
@@ -207,7 +211,7 @@ public class RouterView extends VerticalLayout {
         return addRouteButton;
     }
 
-    private Button editRouteButton(RouterRepository routerRepository, Grid<RouterEntity> grid, RouterEntity route) {
+    private Button editRouteButton(RouterRepository routerRepository, RouterEntity route) {
         Dialog dialog = new Dialog();
         dialog.setHeaderTitle("Edit entity");
 
@@ -240,10 +244,10 @@ public class RouterView extends VerticalLayout {
             try {
                 editRoute(routerRepository, route.getId(), did, setid, description);
 
-                Notification.show("Запись успешно создана", 5000, Notification.Position.BOTTOM_END)
+                Notification.show("Запись успешно изменена", 5000, Notification.Position.BOTTOM_END)
                         .addThemeVariants(NotificationVariant.LUMO_SUCCESS);
             } catch (NumberFormatException exception) {
-                Notification.show("Ошибка: невозможно преобразовать SetID в число", 5000, Notification.Position.BOTTOM_END)
+                Notification.show(exception.toString(), 5000, Notification.Position.BOTTOM_END)
                         .addThemeVariants(NotificationVariant.LUMO_ERROR);
             }
             refreshGrid(routerRepository, dataProvider);
@@ -264,7 +268,7 @@ public class RouterView extends VerticalLayout {
         return editRouteButton;
     }
 
-    private Button deleteRouteButton(RouterRepository routerRepository, Grid<RouterEntity> grid, RouterEntity route) {
+    private Button deleteRouteButton(RouterRepository routerRepository, RouterEntity route) {
         Dialog dialog = new Dialog();
         dialog.setHeaderTitle("Delete entity");
 
@@ -280,8 +284,11 @@ public class RouterView extends VerticalLayout {
             refreshGrid(routerRepository, dataProvider);
 //            grid.setItems(routerRepository.findAll(Sort.by("id")));
             dialog.close();
+            Notification.show("Запись успешно удалена", 5000, Notification.Position.BOTTOM_END)
+                    .addThemeVariants(NotificationVariant.LUMO_SUCCESS);
         });
         deleteButton.addThemeVariants(ButtonVariant.LUMO_PRIMARY, ButtonVariant.LUMO_ERROR);
+
         Button cancelButton = new Button("Отмена", e -> dialog.close());
         cancelButton.addThemeVariants(ButtonVariant.LUMO_ERROR);
         dialog.getFooter().add(deleteButton, cancelButton);

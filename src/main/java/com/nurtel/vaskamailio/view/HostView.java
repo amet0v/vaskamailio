@@ -10,6 +10,7 @@ import com.vaadin.flow.component.dialog.Dialog;
 import com.vaadin.flow.component.grid.Grid;
 import com.vaadin.flow.component.grid.GridVariant;
 import com.vaadin.flow.component.html.Div;
+import com.vaadin.flow.component.icon.Icon;
 import com.vaadin.flow.component.notification.Notification;
 import com.vaadin.flow.component.notification.NotificationVariant;
 import com.vaadin.flow.component.orderedlayout.HorizontalLayout;
@@ -35,7 +36,7 @@ public class HostView extends VerticalLayout {
         Grid<HostEntity> HostEntityGrid = new Grid<>(HostEntity.class, false);
         HostEntityGrid.getStyle().set("height", "80vh");
 
-        addButton = createHostButton(hostRepository, HostEntityGrid);
+        addButton = createHostButton(hostRepository);
 
         List<HostEntity> items = hostRepository.findAll(Sort.by("id"));
         dataProvider = new ListDataProvider<>(items);
@@ -93,7 +94,7 @@ public class HostView extends VerticalLayout {
                 .setResizable(true);
 
         HostEntityGrid.addComponentColumn(HostEntity -> {
-                    Button editButton = editHostButton(hostRepository, HostEntityGrid, HostEntity);
+                    Button editButton = editHostButton(hostRepository, HostEntity);
                     editButton.addThemeVariants(ButtonVariant.LUMO_WARNING);
                     editButton.getElement().getStyle()
                             .set("font-size", "20px");
@@ -112,7 +113,7 @@ public class HostView extends VerticalLayout {
                 .setFlexGrow(0);
 
         HostEntityGrid.addComponentColumn(HostEntity -> {
-                    Button deleteButton = deleteHostButton(hostRepository, HostEntityGrid, HostEntity);
+                    Button deleteButton = deleteHostButton(hostRepository, HostEntity);
                     deleteButton.addThemeVariants(ButtonVariant.LUMO_ERROR);
                     deleteButton.getElement().getStyle()
                             .set("font-size", "20px");
@@ -139,6 +140,7 @@ public class HostView extends VerticalLayout {
     private TextField getFilterField() {
         TextField filterField = new TextField();
         filterField.setPlaceholder("Поиск...");
+        filterField.setPrefixComponent(new Icon("lumo", "search"));
         filterField.setClearButtonVisible(true);
         filterField.setWidth("300px");
         filterField.addValueChangeListener(e ->
@@ -150,7 +152,7 @@ public class HostView extends VerticalLayout {
         return filterField;
     }
 
-    private Button createHostButton(HostRepository hostRepository, Grid<HostEntity> grid) {
+    private Button createHostButton(HostRepository hostRepository) {
         Dialog dialog = new Dialog();
         dialog.setHeaderTitle("New entity");
 
@@ -183,7 +185,7 @@ public class HostView extends VerticalLayout {
                 Notification.show("Запись успешно создана", 5000, Notification.Position.BOTTOM_END)
                         .addThemeVariants(NotificationVariant.LUMO_SUCCESS);
             } catch (NumberFormatException exception) {
-                Notification.show("Ошибка: невозможно преобразовать SetID в число", 5000, Notification.Position.BOTTOM_END)
+                Notification.show(exception.toString(), 5000, Notification.Position.BOTTOM_END)
                         .addThemeVariants(NotificationVariant.LUMO_ERROR);
             }
             refreshGrid(hostRepository, dataProvider);
@@ -210,7 +212,7 @@ public class HostView extends VerticalLayout {
         return addRouteButton;
     }
 
-    private Button editHostButton(HostRepository hostRepository, Grid<HostEntity> grid, HostEntity host) {
+    private Button editHostButton(HostRepository hostRepository, HostEntity host) {
         Dialog dialog = new Dialog();
         dialog.setHeaderTitle("Edit entity");
 
@@ -244,10 +246,10 @@ public class HostView extends VerticalLayout {
             try {
                 editHost(hostRepository, host.getId(), ip, isActive, description);
 
-                Notification.show("Запись успешно создана", 5000, Notification.Position.BOTTOM_END)
+                Notification.show("Запись успешно изменена", 5000, Notification.Position.BOTTOM_END)
                         .addThemeVariants(NotificationVariant.LUMO_SUCCESS);
             } catch (NumberFormatException exception) {
-                Notification.show("Ошибка: невозможно преобразовать SetID в число", 5000, Notification.Position.BOTTOM_END)
+                Notification.show(exception.toString(), 5000, Notification.Position.BOTTOM_END)
                         .addThemeVariants(NotificationVariant.LUMO_ERROR);
             }
             refreshGrid(hostRepository, dataProvider);
@@ -267,7 +269,7 @@ public class HostView extends VerticalLayout {
         return editHostButton;
     }
 
-    private Button deleteHostButton(HostRepository hostRepository, Grid<HostEntity> grid, HostEntity host) {
+    private Button deleteHostButton(HostRepository hostRepository, HostEntity host) {
         Dialog dialog = new Dialog();
         dialog.setHeaderTitle("Delete entity");
 
@@ -283,6 +285,8 @@ public class HostView extends VerticalLayout {
             refreshGrid(hostRepository, dataProvider);
 //            grid.setItems(hostRepository.findAll(Sort.by("id")));
             dialog.close();
+            Notification.show("Запись успешно удалена", 5000, Notification.Position.BOTTOM_END)
+                    .addThemeVariants(NotificationVariant.LUMO_SUCCESS);
         });
         deleteButton.addThemeVariants(ButtonVariant.LUMO_PRIMARY, ButtonVariant.LUMO_ERROR);
         Button cancelButton = new Button("Отмена", e -> dialog.close());
