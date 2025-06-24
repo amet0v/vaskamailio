@@ -15,15 +15,19 @@ import com.vaadin.flow.component.orderedlayout.HorizontalLayout;
 import com.vaadin.flow.component.orderedlayout.VerticalLayout;
 import com.vaadin.flow.component.textfield.IntegerField;
 import com.vaadin.flow.component.textfield.TextField;
+import com.vaadin.flow.data.provider.ListDataProvider;
 import com.vaadin.flow.router.PageTitle;
 import com.vaadin.flow.router.Route;
 import org.springframework.data.domain.Sort;
+
+import java.util.List;
 
 import static com.nurtel.vaskamailio.dispatcher.service.DispatcherService.*;
 
 @Route(value = "/dispatcher", layout = MainLayout.class)
 @PageTitle("Kamailio | Dispatcher")
 public class DispatcherView extends VerticalLayout {
+    ListDataProvider<DispatcherEntity> dataProvider;
     public static Button addButton = new Button();
 
     public DispatcherView(DispatcherRepository dispatcherRepository) {
@@ -32,8 +36,17 @@ public class DispatcherView extends VerticalLayout {
 
         addButton = createDispatcherButton(dispatcherRepository, dispatcherEntityGrid);
 
+        List<DispatcherEntity> items = dispatcherRepository.findAll(Sort.by("id"));
+        dataProvider = new ListDataProvider<>(items);
+        dispatcherEntityGrid.setDataProvider(dataProvider);
+
+        TextField filterField = getFilterField();
+
         HorizontalLayout horizontalLayout = new HorizontalLayout();
-        horizontalLayout.add(addButton);
+        horizontalLayout.setWidthFull();
+        horizontalLayout.setJustifyContentMode(JustifyContentMode.BETWEEN);
+
+        horizontalLayout.add(addButton, filterField);
         add(horizontalLayout);
 
         add(dispatcherEntityGrid);
@@ -118,10 +131,24 @@ public class DispatcherView extends VerticalLayout {
                 .setWidth("10%")
                 .setFlexGrow(0);
 
-        dispatcherEntityGrid.setItems(dispatcherRepository.findAll(Sort.by("id")));
+//        dispatcherEntityGrid.setItems(items);
 
         dispatcherEntityGrid.addThemeVariants(GridVariant.LUMO_COLUMN_BORDERS);
         dispatcherEntityGrid.addThemeVariants(GridVariant.LUMO_ROW_STRIPES);
+    }
+
+    private TextField getFilterField() {
+        TextField filterField = new TextField();
+        filterField.setPlaceholder("Поиск...");
+        filterField.setClearButtonVisible(true);
+        filterField.setWidth("300px");
+        filterField.addValueChangeListener(e ->
+                dataProvider.setFilter(dispatcher -> {
+                    String value = e.getValue().toLowerCase();
+                    return (dispatcher.getDestination() != null && dispatcher.getDestination().toLowerCase().contains(value))
+                            || (dispatcher.getDescription() != null && dispatcher.getDescription().toLowerCase().contains(value));
+                }));
+        return filterField;
     }
 
     private Button createDispatcherButton(DispatcherRepository dispatcherRepository, Grid<DispatcherEntity> grid) {
@@ -174,8 +201,8 @@ public class DispatcherView extends VerticalLayout {
                 Notification.show("Ошибка: Невозможно преобразовать в число", 5000, Notification.Position.BOTTOM_END)
                         .addThemeVariants(NotificationVariant.LUMO_ERROR);
             }
-
-            grid.setItems(dispatcherRepository.findAll(Sort.by("id")));
+            refreshGrid(dispatcherRepository, dataProvider);
+//            grid.setItems(dispatcherRepository.findAll(Sort.by("id")));
         });
         saveButton.addThemeVariants(ButtonVariant.LUMO_PRIMARY);
         Button cancelButton = new Button("Отмена", e ->
@@ -252,8 +279,8 @@ public class DispatcherView extends VerticalLayout {
                 Notification.show("Ошибка: Невозможно преобразовать в число", 5000, Notification.Position.BOTTOM_END)
                         .addThemeVariants(NotificationVariant.LUMO_ERROR);
             }
-
-            grid.setItems(dispatcherRepository.findAll(Sort.by("id")));
+            refreshGrid(dispatcherRepository, dataProvider);
+//            grid.setItems(dispatcherRepository.findAll(Sort.by("id")));
             dialog.close();
         });
         saveButton.addThemeVariants(ButtonVariant.LUMO_PRIMARY);
@@ -283,8 +310,8 @@ public class DispatcherView extends VerticalLayout {
 
         Button deleteButton = new Button("Удалить", e -> {
             deleteDispatcherEntity(dispatcherRepository, dispatcherEntity.getId());
-
-            grid.setItems(dispatcherRepository.findAll(Sort.by("id")));
+            refreshGrid(dispatcherRepository, dataProvider);
+//            grid.setItems(dispatcherRepository.findAll(Sort.by("id")));
             dialog.close();
         });
         deleteButton.addThemeVariants(ButtonVariant.LUMO_PRIMARY, ButtonVariant.LUMO_ERROR);
@@ -338,5 +365,12 @@ public class DispatcherView extends VerticalLayout {
 //        priorityField.setHelperText("example priority");
         attrsField.setHelperText("socket=udp:172.27.201.166:5060");
         descriptionField.setHelperText("hostname");
+    }
+
+    private void refreshGrid(DispatcherRepository dispatcherRepository, ListDataProvider<DispatcherEntity> dataProvider) {
+        List<DispatcherEntity> updatedItems = dispatcherRepository.findAll(Sort.by("id"));
+        dataProvider.getItems().clear();
+        dataProvider.getItems().addAll(updatedItems);
+        dataProvider.refreshAll();
     }
 }

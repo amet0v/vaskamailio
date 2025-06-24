@@ -15,15 +15,19 @@ import com.vaadin.flow.component.orderedlayout.HorizontalLayout;
 import com.vaadin.flow.component.orderedlayout.VerticalLayout;
 import com.vaadin.flow.component.textfield.IntegerField;
 import com.vaadin.flow.component.textfield.TextField;
+import com.vaadin.flow.data.provider.ListDataProvider;
 import com.vaadin.flow.router.PageTitle;
 import com.vaadin.flow.router.Route;
 import org.springframework.data.domain.Sort;
+
+import java.util.List;
 
 import static com.nurtel.vaskamailio.router.service.RouterService.*;
 
 @Route(value = "/router", layout = MainLayout.class)
 @PageTitle("Kamailio | Router")
 public class RouterView extends VerticalLayout {
+    ListDataProvider<RouterEntity> dataProvider;
     public static Button addButton = new Button();
 //    public static Button deleteButton = new Button();
 //    public static Button editButton = new Button();
@@ -34,8 +38,18 @@ public class RouterView extends VerticalLayout {
 
         addButton = createRouteButton(routerRepository, routerEntityGrid);
 
+        List<RouterEntity> items = routerRepository.findAll(Sort.by("id"));
+        dataProvider = new ListDataProvider<>(items);
+        routerEntityGrid.setDataProvider(dataProvider);
+
+        TextField filterField = getFilterField();
+
         HorizontalLayout horizontalLayout = new HorizontalLayout();
-        horizontalLayout.add(addButton);
+        horizontalLayout.setWidthFull();
+        horizontalLayout.setJustifyContentMode(JustifyContentMode.BETWEEN);
+
+        horizontalLayout.add(addButton, filterField);
+
         add(horizontalLayout);
 
         add(routerEntityGrid);
@@ -52,19 +66,19 @@ public class RouterView extends VerticalLayout {
                 .setSortable(true)
                 .setResizable(true);
 
-        routerEntityGrid.addColumn(RouterEntity::getKeyType)
-                .setHeader("Key type")
-                .setWidth("10%")
-                .setFlexGrow(0)
-                .setSortable(true)
-                .setResizable(true);
-
-        routerEntityGrid.addColumn(RouterEntity::getValueType)
-                .setHeader("Value type")
-                .setWidth("10%")
-                .setFlexGrow(0)
-                .setSortable(true)
-                .setResizable(true);
+//        routerEntityGrid.addColumn(RouterEntity::getKeyType)
+//                .setHeader("Key type")
+//                .setWidth("10%")
+//                .setFlexGrow(0)
+//                .setSortable(true)
+//                .setResizable(true);
+//
+//        routerEntityGrid.addColumn(RouterEntity::getValueType)
+//                .setHeader("Value type")
+//                .setWidth("10%")
+//                .setFlexGrow(0)
+//                .setSortable(true)
+//                .setResizable(true);
 
         routerEntityGrid.addColumn(RouterEntity::getSetid)
                 .setHeader("SetID (value)")
@@ -114,10 +128,24 @@ public class RouterView extends VerticalLayout {
                 .setWidth("10%")
                 .setFlexGrow(0);
 
-        routerEntityGrid.setItems(routerRepository.findAll(Sort.by("id")));
+//        routerEntityGrid.setItems(routerRepository.findAll(Sort.by("id")));
 
         routerEntityGrid.addThemeVariants(GridVariant.LUMO_COLUMN_BORDERS);
         routerEntityGrid.addThemeVariants(GridVariant.LUMO_ROW_STRIPES);
+    }
+
+    private TextField getFilterField() {
+        TextField filterField = new TextField();
+        filterField.setPlaceholder("Поиск...");
+        filterField.setClearButtonVisible(true);
+        filterField.setWidth("300px");
+        filterField.addValueChangeListener(e ->
+                dataProvider.setFilter(router -> {
+                    String value = e.getValue().toLowerCase();
+                    return (router.getDid() != null && router.getDid().toLowerCase().contains(value))
+                            || (router.getDescription() != null && router.getDescription().toLowerCase().contains(value));
+                }));
+        return filterField;
     }
 
     private Button createRouteButton(RouterRepository routerRepository, Grid<RouterEntity> grid) {
@@ -155,8 +183,8 @@ public class RouterView extends VerticalLayout {
                 Notification.show("Ошибка: невозможно преобразовать SetID в число", 5000, Notification.Position.BOTTOM_END)
                         .addThemeVariants(NotificationVariant.LUMO_ERROR);
             }
-
-            grid.setItems(routerRepository.findAll(Sort.by("id")));
+            refreshGrid(routerRepository, dataProvider);
+//            grid.setItems(routerRepository.findAll(Sort.by("id")));
         });
         saveButton.addThemeVariants(ButtonVariant.LUMO_PRIMARY);
         Button cancelButton = new Button("Отмена", e -> {
@@ -218,8 +246,8 @@ public class RouterView extends VerticalLayout {
                 Notification.show("Ошибка: невозможно преобразовать SetID в число", 5000, Notification.Position.BOTTOM_END)
                         .addThemeVariants(NotificationVariant.LUMO_ERROR);
             }
-
-            grid.setItems(routerRepository.findAll(Sort.by("id")));
+            refreshGrid(routerRepository, dataProvider);
+//            grid.setItems(routerRepository.findAll(Sort.by("id")));
             dialog.close();
         });
         saveButton.addThemeVariants(ButtonVariant.LUMO_PRIMARY);
@@ -249,8 +277,8 @@ public class RouterView extends VerticalLayout {
 
         Button deleteButton = new Button("Удалить", e -> {
             deleteRoute(routerRepository, route.getId());
-
-            grid.setItems(routerRepository.findAll(Sort.by("id")));
+            refreshGrid(routerRepository, dataProvider);
+//            grid.setItems(routerRepository.findAll(Sort.by("id")));
             dialog.close();
         });
         deleteButton.addThemeVariants(ButtonVariant.LUMO_PRIMARY, ButtonVariant.LUMO_ERROR);
@@ -279,5 +307,12 @@ public class RouterView extends VerticalLayout {
 //        didField.setHelperText("example: 17888");
 //        setidField.setHelperText("example setid");
 //        descriptionField.setHelperText("example desc");
+    }
+
+    private void refreshGrid(RouterRepository routerRepository, ListDataProvider<RouterEntity> dataProvider) {
+        List<RouterEntity> updatedItems = routerRepository.findAll(Sort.by("id"));
+        dataProvider.getItems().clear();
+        dataProvider.getItems().addAll(updatedItems);
+        dataProvider.refreshAll();
     }
 }

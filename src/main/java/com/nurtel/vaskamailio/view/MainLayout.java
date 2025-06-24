@@ -68,15 +68,15 @@ public class MainLayout extends AppLayout {
         routerDidIcon.setColor("#b8c7ce");
         SideNavItem routerDidItem = new SideNavItem("Router", RouterView.class, routerDidIcon);
 
-        Icon hostsIcon = VaadinIcon.LIST_UL.create();
-        hostsIcon.setColor("#b8c7ce");
-        SideNavItem hostsItem = new SideNavItem("Hosts", RouterView.class, hostsIcon);
-
         Icon dispatcherIcon = VaadinIcon.SCALE.create();
         dispatcherIcon.setColor("#b8c7ce");
         SideNavItem dispatcherItem = new SideNavItem("Dispatcher", DispatcherView.class, dispatcherIcon);
 
-        List<SideNavItem> sideNavItems = List.of(hostsItem, routerDidItem, dispatcherItem);
+        Icon hostsIcon = VaadinIcon.LIST_UL.create();
+        hostsIcon.setColor("#b8c7ce");
+        SideNavItem hostsItem = new SideNavItem("Hosts", HostView.class, hostsIcon);
+
+        List<SideNavItem> sideNavItems = List.of(routerDidItem, dispatcherItem, hostsItem);
 
         for (SideNavItem item : sideNavItems) {
             item.getStyle()
