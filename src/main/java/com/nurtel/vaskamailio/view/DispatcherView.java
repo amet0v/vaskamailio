@@ -9,6 +9,7 @@ import com.vaadin.flow.component.dialog.Dialog;
 import com.vaadin.flow.component.grid.Grid;
 import com.vaadin.flow.component.grid.GridVariant;
 import com.vaadin.flow.component.html.Div;
+import com.vaadin.flow.component.icon.Icon;
 import com.vaadin.flow.component.notification.Notification;
 import com.vaadin.flow.component.notification.NotificationVariant;
 import com.vaadin.flow.component.orderedlayout.HorizontalLayout;
@@ -140,6 +141,7 @@ public class DispatcherView extends VerticalLayout {
     private TextField getFilterField() {
         TextField filterField = new TextField();
         filterField.setPlaceholder("Поиск...");
+        filterField.setPrefixComponent(new Icon("lumo", "search"));
         filterField.setClearButtonVisible(true);
         filterField.setWidth("300px");
         filterField.addValueChangeListener(e ->
@@ -180,7 +182,7 @@ public class DispatcherView extends VerticalLayout {
             String description = descriptionField.isEmpty() ? "" : descriptionField.getValue();
 
             if (setid == null || flags == null || priority == null || destination == null) {
-                Notification.show("Ошибка: невозможно создать запись с значением null", 5000, Notification.Position.BOTTOM_END)
+                Notification.show("Ошибка: Destination не может быть пустым", 5000, Notification.Position.BOTTOM_END)
                         .addThemeVariants(NotificationVariant.LUMO_ERROR);
                 return;
             }
@@ -198,7 +200,7 @@ public class DispatcherView extends VerticalLayout {
                 Notification.show("Запись успешно создана", 5000, Notification.Position.BOTTOM_END)
                         .addThemeVariants(NotificationVariant.LUMO_SUCCESS);
             } catch (NumberFormatException | NullPointerException exception) {
-                Notification.show("Ошибка: Невозможно преобразовать в число", 5000, Notification.Position.BOTTOM_END)
+                Notification.show(exception.toString(), 5000, Notification.Position.BOTTOM_END)
                         .addThemeVariants(NotificationVariant.LUMO_ERROR);
             }
             refreshGrid(dispatcherRepository, dataProvider);
@@ -276,7 +278,7 @@ public class DispatcherView extends VerticalLayout {
                 Notification.show("Запись успешно изменена", 5000, Notification.Position.BOTTOM_END)
                         .addThemeVariants(NotificationVariant.LUMO_SUCCESS);
             } catch (NumberFormatException | NullPointerException exception) {
-                Notification.show("Ошибка: Невозможно преобразовать в число", 5000, Notification.Position.BOTTOM_END)
+                Notification.show(exception.toString(), 5000, Notification.Position.BOTTOM_END)
                         .addThemeVariants(NotificationVariant.LUMO_ERROR);
             }
             refreshGrid(dispatcherRepository, dataProvider);
@@ -313,6 +315,8 @@ public class DispatcherView extends VerticalLayout {
             refreshGrid(dispatcherRepository, dataProvider);
 //            grid.setItems(dispatcherRepository.findAll(Sort.by("id")));
             dialog.close();
+            Notification.show("Запись успешно удалена", 5000, Notification.Position.BOTTOM_END)
+                    .addThemeVariants(NotificationVariant.LUMO_SUCCESS);
         });
         deleteButton.addThemeVariants(ButtonVariant.LUMO_PRIMARY, ButtonVariant.LUMO_ERROR);
         Button cancelButton = new Button("Отмена", e -> dialog.close());
