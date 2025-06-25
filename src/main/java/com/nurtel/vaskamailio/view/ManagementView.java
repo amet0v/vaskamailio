@@ -1,6 +1,7 @@
 package com.nurtel.vaskamailio.view;
 
 import com.vaadin.flow.component.Html;
+import com.vaadin.flow.component.Text;
 import com.vaadin.flow.component.button.Button;
 import com.vaadin.flow.component.button.ButtonVariant;
 import com.vaadin.flow.component.dialog.Dialog;
@@ -22,6 +23,12 @@ public class ManagementView extends VerticalLayout {
     private final TextArea outputArea = new TextArea("Вывод консоли");
 
     public ManagementView() {
+        Boolean isAllow = MainLayout.isAllow();
+        if (!isAllow){
+            Text notAllowedText = new Text("Просмотр страницы недоступен");
+            add(notAllowedText);
+            return;
+        }
 
         outputArea.setWidthFull();
         outputArea.setHeight("50vh");
