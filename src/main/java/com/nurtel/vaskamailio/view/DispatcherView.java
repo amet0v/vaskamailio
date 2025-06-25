@@ -35,6 +35,13 @@ public class DispatcherView extends VerticalLayout {
     public static Button addButton = new Button();
 
     public DispatcherView(DispatcherRepository dispatcherRepository, HostRepository hostRepository) {
+        Boolean isAllow = MainLayout.isAllow();
+        if (!isAllow){
+            Text notAllowedText = new Text("Просмотр страницы недоступен");
+            add(notAllowedText);
+            return;
+        }
+
         Grid<DispatcherEntity> dispatcherEntityGrid = new Grid<>(DispatcherEntity.class, false);
         dispatcherEntityGrid.getStyle().set("height", "80vh");
 

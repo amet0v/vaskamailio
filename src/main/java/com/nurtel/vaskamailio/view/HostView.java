@@ -33,6 +33,13 @@ public class HostView extends VerticalLayout {
     public static Button addButton = new Button();
 
     public HostView(HostRepository hostRepository) {
+        Boolean isAllow = MainLayout.isAllow();
+        if (!isAllow){
+            Text notAllowedText = new Text("Просмотр страницы недоступен");
+            add(notAllowedText);
+            return;
+        }
+
         Grid<HostEntity> HostEntityGrid = new Grid<>(HostEntity.class, false);
         HostEntityGrid.getStyle().set("height", "80vh");
 

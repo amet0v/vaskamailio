@@ -32,6 +32,13 @@ public class RouterView extends VerticalLayout {
     public static Button addButton = new Button();
 
     public RouterView(RouterRepository routerRepository) {
+        Boolean isAllow = MainLayout.isAllow();
+        if (!isAllow){
+            Text notAllowedText = new Text("Просмотр страницы недоступен");
+            add(notAllowedText);
+            return;
+        }
+
         Grid<RouterEntity> routerEntityGrid = new Grid<>(RouterEntity.class, false);
         routerEntityGrid.getStyle().set("height", "80vh");
 
