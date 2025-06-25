@@ -60,6 +60,6 @@ public class DispatcherService {
             Integer id
     ){
         Optional<DispatcherEntity> optionalDispatcherEntity = dispatcherRepository.findById(id);
-        if (optionalDispatcherEntity.isPresent()) dispatcherRepository.findById(id);
+        if (optionalDispatcherEntity.isPresent()) dispatcherRepository.deleteById(id);
     }
 }

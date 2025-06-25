@@ -54,4 +54,20 @@ public class HostService {
         Optional<HostEntity> optionalHost = hostRepository.findById(id);
         if (optionalHost.isPresent()) hostRepository.deleteById(id);
     }
+
+    public static String getIpFromDestination(String destination) {
+        String[] parts = destination.split(":");
+        if (parts.length >= 3) {
+            return parts[1];
+        }
+        else {
+            return "incorrect IP";
+        }
+    }
+
+    public static HostEntity getHostByIp(HostRepository hostRepository, String ip){
+        Optional<HostEntity> optionalHost = hostRepository.findByIp(ip);
+        if (optionalHost.isPresent()) return optionalHost.get();
+        else throw new NullPointerException(String.format("Хост с айпи %s не найден в ht_hosts", ip));
+    }
 }
