@@ -44,13 +44,17 @@ public class DispatcherView extends VerticalLayout {
         dataProvider = new ListDataProvider<>(items);
         dispatcherEntityGrid.setDataProvider(dataProvider);
 
+        Div info = new Div(new Text("ℹ\uFE0F setid = 0 — применяется если не найден маршрут в router ℹ\uFE0F"));
+        info.getElement().getThemeList().add("badge");
+        info.getStyle().set("font-size", "16px");
+
         TextField filterField = getFilterField();
 
         HorizontalLayout horizontalLayout = new HorizontalLayout();
         horizontalLayout.setWidthFull();
         horizontalLayout.setJustifyContentMode(JustifyContentMode.BETWEEN);
 
-        horizontalLayout.add(addButton, filterField);
+        horizontalLayout.add(addButton, info,  filterField);
         add(horizontalLayout);
 
         add(dispatcherEntityGrid);
