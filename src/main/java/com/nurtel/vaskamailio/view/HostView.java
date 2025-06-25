@@ -44,6 +44,7 @@ public class HostView extends VerticalLayout {
 
         Div alert = new Div(new Text("⚠️ Данные синхронизированы с dispatcher. Изменения вручную — только в исключительных случаях! ⚠️"));
         alert.getElement().getThemeList().add("badge error");
+        alert.getStyle().set("font-size", "16px");
 
         TextField filterField = getFilterField();
 
