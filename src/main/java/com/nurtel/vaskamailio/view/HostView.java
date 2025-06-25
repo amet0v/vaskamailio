@@ -42,13 +42,16 @@ public class HostView extends VerticalLayout {
         dataProvider = new ListDataProvider<>(items);
         HostEntityGrid.setDataProvider(dataProvider);
 
+        Div alert = new Div(new Text("⚠️ Данные синхронизированы с dispatcher. Изменения вручную — только в исключительных случаях! ⚠️"));
+        alert.getElement().getThemeList().add("badge error");
+
         TextField filterField = getFilterField();
 
         HorizontalLayout horizontalLayout = new HorizontalLayout();
         horizontalLayout.setWidthFull();
         horizontalLayout.setJustifyContentMode(JustifyContentMode.BETWEEN);
 
-        horizontalLayout.add(addButton, filterField);
+        horizontalLayout.add(addButton, alert,  filterField);
         add(horizontalLayout);
 
         add(HostEntityGrid);

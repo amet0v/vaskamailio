@@ -2,6 +2,8 @@ package com.nurtel.vaskamailio.view;
 
 import com.nurtel.vaskamailio.dispatcher.entity.DispatcherEntity;
 import com.nurtel.vaskamailio.dispatcher.repository.DispatcherRepository;
+import com.nurtel.vaskamailio.host.entity.HostEntity;
+import com.nurtel.vaskamailio.host.repository.HostRepository;
 import com.vaadin.flow.component.Text;
 import com.vaadin.flow.component.button.Button;
 import com.vaadin.flow.component.button.ButtonVariant;
@@ -24,6 +26,7 @@ import org.springframework.data.domain.Sort;
 import java.util.List;
 
 import static com.nurtel.vaskamailio.dispatcher.service.DispatcherService.*;
+import static com.nurtel.vaskamailio.host.service.HostService.*;
 
 @Route(value = "/dispatcher", layout = MainLayout.class)
 @PageTitle("Kamailio | Dispatcher")
@@ -31,11 +34,11 @@ public class DispatcherView extends VerticalLayout {
     ListDataProvider<DispatcherEntity> dataProvider;
     public static Button addButton = new Button();
 
-    public DispatcherView(DispatcherRepository dispatcherRepository) {
+    public DispatcherView(DispatcherRepository dispatcherRepository, HostRepository hostRepository) {
         Grid<DispatcherEntity> dispatcherEntityGrid = new Grid<>(DispatcherEntity.class, false);
         dispatcherEntityGrid.getStyle().set("height", "80vh");
 
-        addButton = createDispatcherButton(dispatcherRepository, dispatcherEntityGrid);
+        addButton = createDispatcherButton(dispatcherRepository, hostRepository);
 
         List<DispatcherEntity> items = dispatcherRepository.findAll(Sort.by("id"));
         dataProvider = new ListDataProvider<>(items);
@@ -95,7 +98,7 @@ public class DispatcherView extends VerticalLayout {
                 .setResizable(true);
 
         dispatcherEntityGrid.addComponentColumn(entity -> {
-                    Button editButton = editDispatcherButton(dispatcherRepository, dispatcherEntityGrid, entity);
+                    Button editButton = editDispatcherButton(dispatcherRepository, entity, hostRepository);
                     editButton.addThemeVariants(ButtonVariant.LUMO_WARNING);
                     editButton.getElement().getStyle()
                             .set("font-size", "20px");
@@ -114,7 +117,7 @@ public class DispatcherView extends VerticalLayout {
                 .setFlexGrow(0);
 
         dispatcherEntityGrid.addComponentColumn(entity -> {
-                    Button deleteButton = deleteDispatcherButton(dispatcherRepository, dispatcherEntityGrid, entity);
+                    Button deleteButton = deleteDispatcherButton(dispatcherRepository, entity, hostRepository);
                     deleteButton.addThemeVariants(ButtonVariant.LUMO_ERROR);
                     deleteButton.getElement().getStyle()
                             .set("font-size", "20px");
@@ -153,7 +156,7 @@ public class DispatcherView extends VerticalLayout {
         return filterField;
     }
 
-    private Button createDispatcherButton(DispatcherRepository dispatcherRepository, Grid<DispatcherEntity> grid) {
+    private Button createDispatcherButton(DispatcherRepository dispatcherRepository, HostRepository hostRepository) {
         Dialog dialog = new Dialog();
         dialog.setHeaderTitle("New entity");
         dialog.setDraggable(true);
@@ -197,6 +200,13 @@ public class DispatcherView extends VerticalLayout {
                         attrs,
                         description
                 );
+
+                createHost(
+                        hostRepository,
+                        getIpFromDestination(destination),
+                        1,
+                        description
+                );
                 Notification.show("Запись успешно создана", 5000, Notification.Position.BOTTOM_END)
                         .addThemeVariants(NotificationVariant.LUMO_SUCCESS);
             } catch (NumberFormatException | NullPointerException exception) {
@@ -230,7 +240,7 @@ public class DispatcherView extends VerticalLayout {
         return addRouteButton;
     }
 
-    private Button editDispatcherButton(DispatcherRepository dispatcherRepository, Grid<DispatcherEntity> grid, DispatcherEntity dispatcherEntity) {
+    private Button editDispatcherButton(DispatcherRepository dispatcherRepository, DispatcherEntity dispatcherEntity, HostRepository hostRepository) {
         Dialog dialog = new Dialog();
         dialog.setHeaderTitle("Edit entity");
         dialog.setDraggable(true);
@@ -262,9 +272,24 @@ public class DispatcherView extends VerticalLayout {
             Integer flags = flagsField.getValue();
             Integer priority = priorityField.getValue();
             String attrs = attrsField.isEmpty() ? "" : attrsField.getValue();
-            String description = descriptionField.isEmpty() ? null : descriptionField.getValue();
+            String description = descriptionField.isEmpty() ? "" : descriptionField.getValue();
+
+            if (setid == null || flags == null || priority == null || destination == null) {
+                Notification.show("Ошибка: Destination не может быть пустым", 5000, Notification.Position.BOTTOM_END)
+                        .addThemeVariants(NotificationVariant.LUMO_ERROR);
+                return;
+            }
 
             try {
+                HostEntity host = getHostByIp(hostRepository, getIpFromDestination(dispatcherEntity.getDestination()));
+                editHost(
+                        hostRepository,
+                        host.getId(),
+                        getIpFromDestination(destination),
+                        1,
+                        description
+                );
+
                 editDispatcherEntity(
                         dispatcherRepository,
                         dispatcherEntity.getId(),
@@ -275,14 +300,15 @@ public class DispatcherView extends VerticalLayout {
                         attrs,
                         description
                 );
+
                 Notification.show("Запись успешно изменена", 5000, Notification.Position.BOTTOM_END)
                         .addThemeVariants(NotificationVariant.LUMO_SUCCESS);
             } catch (NumberFormatException | NullPointerException exception) {
                 Notification.show(exception.toString(), 5000, Notification.Position.BOTTOM_END)
                         .addThemeVariants(NotificationVariant.LUMO_ERROR);
             }
+
             refreshGrid(dispatcherRepository, dataProvider);
-//            grid.setItems(dispatcherRepository.findAll(Sort.by("id")));
             dialog.close();
         });
         saveButton.addThemeVariants(ButtonVariant.LUMO_PRIMARY);
@@ -299,7 +325,7 @@ public class DispatcherView extends VerticalLayout {
         return editRouteButton;
     }
 
-    private Button deleteDispatcherButton(DispatcherRepository dispatcherRepository, Grid<DispatcherEntity> grid, DispatcherEntity dispatcherEntity) {
+    private Button deleteDispatcherButton(DispatcherRepository dispatcherRepository, DispatcherEntity dispatcherEntity, HostRepository hostRepository) {
         Dialog dialog = new Dialog();
         dialog.setHeaderTitle("Delete entity");
 
@@ -311,9 +337,18 @@ public class DispatcherView extends VerticalLayout {
         dialogLayout.add(text);
 
         Button deleteButton = new Button("Удалить", e -> {
+            try {
+                HostEntity host = getHostByIp(hostRepository, getIpFromDestination(dispatcherEntity.getDestination()));
+                deleteHost(hostRepository, host.getId());
+            } catch (NullPointerException exception) {
+                Notification.show(exception.toString(), 5000, Notification.Position.BOTTOM_END)
+                        .addThemeVariants(NotificationVariant.LUMO_ERROR);
+            }
+
             deleteDispatcherEntity(dispatcherRepository, dispatcherEntity.getId());
+
             refreshGrid(dispatcherRepository, dataProvider);
-//            grid.setItems(dispatcherRepository.findAll(Sort.by("id")));
+
             dialog.close();
             Notification.show("Запись успешно удалена", 5000, Notification.Position.BOTTOM_END)
                     .addThemeVariants(NotificationVariant.LUMO_SUCCESS);
