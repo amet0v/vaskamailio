@@ -76,7 +76,11 @@ public class MainLayout extends AppLayout {
         hostsIcon.setColor("#b8c7ce");
         SideNavItem hostsItem = new SideNavItem("Hosts", HostView.class, hostsIcon);
 
-        List<SideNavItem> sideNavItems = List.of(routerDidItem, dispatcherItem, hostsItem);
+        Icon managementIcon = VaadinIcon.SERVER.create();
+        managementIcon.setColor("#b8c7ce");
+        SideNavItem managementItem = new SideNavItem("Управление", ManagementView.class, managementIcon);
+
+        List<SideNavItem> sideNavItems = List.of(routerDidItem, dispatcherItem, hostsItem, managementItem);
 
         for (SideNavItem item : sideNavItems) {
             item.getStyle()
