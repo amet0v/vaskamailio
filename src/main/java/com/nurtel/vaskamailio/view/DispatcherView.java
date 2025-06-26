@@ -36,7 +36,7 @@ public class DispatcherView extends VerticalLayout {
 
     public DispatcherView(DispatcherRepository dispatcherRepository, HostRepository hostRepository) {
         Boolean isAllow = MainLayout.isAllow();
-        if (!isAllow){
+        if (!isAllow) {
             Text notAllowedText = new Text("Просмотр страницы недоступен");
             add(notAllowedText);
             return;
@@ -61,7 +61,7 @@ public class DispatcherView extends VerticalLayout {
         horizontalLayout.setWidthFull();
         horizontalLayout.setJustifyContentMode(JustifyContentMode.BETWEEN);
 
-        horizontalLayout.add(addButton, info,  filterField);
+        horizontalLayout.add(addButton, info, filterField);
         add(horizontalLayout);
 
         add(dispatcherEntityGrid);
@@ -225,22 +225,14 @@ public class DispatcherView extends VerticalLayout {
                         .addThemeVariants(NotificationVariant.LUMO_ERROR);
             }
             refreshGrid(dispatcherRepository, dataProvider);
-//            grid.setItems(dispatcherRepository.findAll(Sort.by("id")));
         });
         saveButton.addThemeVariants(ButtonVariant.LUMO_PRIMARY);
-        Button cancelButton = new Button("Отмена", e ->
-        {
-            setidField.clear();
-            priorityField.clear();
-            flagsField.clear();
-            dialog.close();
-        });
+        Button cancelButton = new Button("Отмена", e -> dialog.close());
         cancelButton.addThemeVariants(ButtonVariant.LUMO_ERROR);
         dialog.getFooter().add(saveButton, cancelButton);
 
         Button addRouteButton = new Button("Добавить", e -> {
             destinationField.clear();
-//            attrsField.clear();
             descriptionField.clear();
             dialog.open();
         });

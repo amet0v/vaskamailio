@@ -31,7 +31,7 @@ public class ManagementView extends VerticalLayout {
         }
 
         outputArea.setWidthFull();
-        outputArea.setHeight("50vh");
+        outputArea.setHeight("60vh");
         outputArea.setReadOnly(true);
 
         Button readKamailioCfgBtn = new Button("Read kamailio.cfg", VaadinIcon.FILE.create());

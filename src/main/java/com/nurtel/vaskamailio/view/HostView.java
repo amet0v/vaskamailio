@@ -211,7 +211,6 @@ public class HostView extends VerticalLayout {
         dialog.getFooter().add(saveButton, cancelButton);
 
         Button addRouteButton = new Button("Добавить", e -> {
-//            cidField.clear();
             ipField.clear();
             descriptionField.clear();
             dialog.open();
@@ -294,7 +293,6 @@ public class HostView extends VerticalLayout {
         Button deleteButton = new Button("Удалить", e -> {
             deleteHost(hostRepository, host.getId());
             refreshGrid(hostRepository, dataProvider);
-//            grid.setItems(hostRepository.findAll(Sort.by("id")));
             dialog.close();
             Notification.show("Запись успешно удалена", 5000, Notification.Position.BOTTOM_END)
                     .addThemeVariants(NotificationVariant.LUMO_SUCCESS);

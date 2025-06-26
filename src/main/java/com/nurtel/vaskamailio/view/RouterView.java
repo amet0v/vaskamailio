@@ -68,7 +68,7 @@ public class RouterView extends VerticalLayout {
                 .setResizable(true);
 
         routerEntityGrid.addColumn(RouterEntity::getDid)
-                .setHeader("DID (key)")
+                .setHeader("DID")
                 .setWidth("20%")
                 .setFlexGrow(0)
                 .setSortable(true)
@@ -89,7 +89,7 @@ public class RouterView extends VerticalLayout {
 //                .setResizable(true);
 
         routerEntityGrid.addColumn(RouterEntity::getSetid)
-                .setHeader("SetID (value)")
+                .setHeader("SetID")
                 .setWidth("20%")
                 .setFlexGrow(0)
                 .setSortable(true)
@@ -199,14 +199,12 @@ public class RouterView extends VerticalLayout {
         });
         saveButton.addThemeVariants(ButtonVariant.LUMO_PRIMARY);
         Button cancelButton = new Button("Отмена", e -> {
-            setidField.clear();
             dialog.close();
         });
         cancelButton.addThemeVariants(ButtonVariant.LUMO_ERROR);
         dialog.getFooter().add(saveButton, cancelButton);
 
         Button addRouteButton = new Button("Добавить", e -> {
-//            cidField.clear();
             didField.clear();
             descriptionField.clear();
             dialog.open();
