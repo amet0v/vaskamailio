@@ -61,7 +61,7 @@ public class HostService {
             return parts[1];
         }
         else {
-            return "incorrect IP";
+            return destination;
         }
     }
 
