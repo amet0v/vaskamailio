@@ -21,6 +21,8 @@ import com.vaadin.flow.component.textfield.TextField;
 import com.vaadin.flow.data.provider.ListDataProvider;
 import com.vaadin.flow.router.PageTitle;
 import com.vaadin.flow.router.Route;
+import com.vaadin.flow.server.VaadinSession;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.domain.Sort;
 
 import java.util.List;
@@ -31,6 +33,15 @@ import static com.nurtel.vaskamailio.host.service.HostService.*;
 @Route(value = "/dispatcher", layout = MainLayout.class)
 @PageTitle("Kamailio | Dispatcher")
 public class DispatcherView extends VerticalLayout {
+    @Value("${kamailio.default.socket1}")
+    private String socket1;
+
+    @Value("${kamailio.default.socket2}")
+    private String socket2;
+
+    @Value("${kamailio.default.socket3}")
+    private String socket3;
+
     ListDataProvider<DispatcherEntity> dataProvider;
     public static Button addButton = new Button();
 
@@ -234,6 +245,16 @@ public class DispatcherView extends VerticalLayout {
         Button addRouteButton = new Button("Добавить", e -> {
             destinationField.clear();
             descriptionField.clear();
+
+            String selectedDb = (String) VaadinSession.getCurrent().getAttribute("selectedDb");
+            String socketValue = switch (selectedDb != null ? selectedDb : "kamailio01") {
+                case "kamailio01" -> socket1;
+                case "kamailio02" -> socket2;
+                case "kamailio03" -> socket3;
+                default -> "";
+            };
+            attrsField.setValue(socketValue);
+
             dialog.open();
         });
         addRouteButton.addThemeVariants(ButtonVariant.LUMO_PRIMARY);
@@ -396,7 +417,6 @@ public class DispatcherView extends VerticalLayout {
         priorityField.setMin(0);
         priorityField.setWidth("255px");
 
-        attrsField.setValue("socket=udp:172.27.201.166:5060");
         attrsField.setWidth("255px");
 
         descriptionField.setWidth("255px");
@@ -405,7 +425,8 @@ public class DispatcherView extends VerticalLayout {
         destinationField.setHelperText("sip:172.27.x.x:5060");
         flagsField.setHelperText("0 - default");
 //        priorityField.setHelperText("example priority");
-        attrsField.setHelperText("socket=udp:172.27.201.166:5060");
+
+        attrsField.setHelperText("socket=udp:172.27.x.x:5060");
         descriptionField.setHelperText("hostname");
     }
 
