@@ -133,7 +133,7 @@ public class ManagementView extends VerticalLayout {
             // отключаем проверку known_hosts
             session.setConfig("StrictHostKeyChecking", "no");
 
-            session.connect(1 * 1000); // 3 секунды
+            session.connect(10 * 1000); // 10 секунд
 
             ChannelExec channel = (ChannelExec) session.openChannel("exec");
             channel.setCommand(command);
