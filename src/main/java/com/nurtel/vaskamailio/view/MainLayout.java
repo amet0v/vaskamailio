@@ -51,11 +51,15 @@ public class MainLayout extends AppLayout implements AfterNavigationObserver {
     private AuthenticationManager authenticationManager;
     private final Integer sessionInterval = 3600;
 
-    static ComboBox<String> dbSelector = new ComboBox<>();
+    private final ComboBox<String> dbSelector = new ComboBox<>();
 
-    public static void updateDbSelector() {
+    public void updateDbSelector() {
         String selectedDb = (String) VaadinSession.getCurrent().getAttribute("selectedDb");
-        dbSelector.setValue(selectedDb != null ? selectedDb : "kamailio01");
+        if (selectedDb == null) selectedDb = "kamailio01";
+
+        if (!selectedDb.equals(dbSelector.getValue())) {
+            dbSelector.setValue(selectedDb);
+        }
     }
 
     public static Boolean isAllow() {
@@ -100,7 +104,6 @@ public class MainLayout extends AppLayout implements AfterNavigationObserver {
                 .set("font-size", "var(--lumo-font-size-xl)")
                 .set("color", "#ffffff");
 
-        dbSelector = new ComboBox<>();
         dbSelector.setItems("kamailio01", "kamailio02", "kamailio03");
 
         updateDbSelector();
@@ -110,9 +113,17 @@ public class MainLayout extends AppLayout implements AfterNavigationObserver {
                 .set("color", "#ffffff");
 
         dbSelector.addValueChangeListener(e -> {
-            UI.getCurrent().access(() -> {
-                UI.getCurrent().getPage().reload();
-                VaadinSession.getCurrent().setAttribute("selectedDb", e.getValue());
+            UI ui = UI.getCurrent();
+            String currentPath = ui.getInternals().getActiveViewLocation().getPath();
+
+            VaadinSession.getCurrent().setAttribute("selectedDb", e.getValue());
+
+            ui.access(() -> {
+                String newPath = ui.getInternals().getActiveViewLocation().getPath();
+
+                if (currentPath.equals(newPath)) {
+                    ui.getPage().reload();
+                }
             });
         });
 
