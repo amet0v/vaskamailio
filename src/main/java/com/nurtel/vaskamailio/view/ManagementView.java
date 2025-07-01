@@ -25,16 +25,7 @@ import java.io.InputStreamReader;
 @Route(value = "/management", layout = MainLayout.class)
 @PageTitle("Kamailio | Management")
 public class ManagementView extends VerticalLayout {
-    //    @Value("${ssh.ip1}")
-//    private String sshIp1;
-//    @Value("${ssh.ip2}")
-//    private String sshIp2;
-//    @Value("${ssh.ip3}")
-//    private String sshIp3;
-//    @Value("${ssh.login}")
-//    private String sshLogin;
-//    @Value("${ssh.password}")
-//    private String sshPassword;
+
     private final String sshIp1;
     private final String sshIp2;
     private final String sshIp3;
@@ -54,15 +45,12 @@ public class ManagementView extends VerticalLayout {
         this.sshIp3 = sshIp3;
         this.sshLogin = sshLogin;
         this.sshPassword = sshPassword;
+
         Boolean isAllow = MainLayout.isAllow();
         if (!isAllow) {
             add(new Text("Просмотр страницы недоступен"));
             return;
         }
-
-        System.out.println("sshIp1 = " + sshIp1);
-        System.out.println("sshIp2 = " + sshIp2);
-        System.out.println("sshIp3 = " + sshIp3);
 
         outputArea.setWidthFull();
         outputArea.setHeight("50vh");
