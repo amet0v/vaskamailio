@@ -53,14 +53,19 @@ public class MainLayout extends AppLayout implements AfterNavigationObserver {
 
     private final ComboBox<String> dbSelector = new ComboBox<>();
 
-    public void updateDbSelector() {
-        String selectedDb = (String) VaadinSession.getCurrent().getAttribute("selectedDb");
-        if (selectedDb == null) selectedDb = "kamailio01";
-
-        if (!selectedDb.equals(dbSelector.getValue())) {
-            dbSelector.setValue(selectedDb);
-        }
+    public ComboBox<String> getDbSelector() {
+        return dbSelector;
     }
+
+//    public void updateDbSelector() {
+//        String selectedDb = (String) VaadinSession.getCurrent().getAttribute("selectedDb:" + UI.getCurrent().getUIId());
+//        System.out.println(UI.getCurrent().getUIId());
+//        if (selectedDb == null) selectedDb = "kamailio01";
+//
+//        if (!selectedDb.equals(dbSelector.getValue())) {
+//            dbSelector.setValue(selectedDb);
+//        }
+//    }
 
     public static Boolean isAllow() {
         String departmentString = "Группа управления VAS-платформами";
@@ -105,27 +110,33 @@ public class MainLayout extends AppLayout implements AfterNavigationObserver {
                 .set("color", "#ffffff");
 
         dbSelector.setItems("kamailio01", "kamailio02", "kamailio03");
+        dbSelector.setValue("kamailio01");
 
-        updateDbSelector();
+//        updateDbSelector();
 
         dbSelector.getStyle()
                 .set("background-color", "#ff2898")
                 .set("color", "#ffffff");
 
         dbSelector.addValueChangeListener(e -> {
-            UI ui = UI.getCurrent();
-            String currentPath = ui.getInternals().getActiveViewLocation().getPath();
-
-            VaadinSession.getCurrent().setAttribute("selectedDb", e.getValue());
-
-            ui.access(() -> {
-                String newPath = ui.getInternals().getActiveViewLocation().getPath();
-
-                if (currentPath.equals(newPath)) {
-                    ui.getPage().reload();
-                }
-            });
+            UI.getCurrent().refreshCurrentRoute(false);
+//            HostView.refreshGrid();
         });
+
+//        dbSelector.addValueChangeListener(e -> {
+//            UI ui = UI.getCurrent();
+//            String currentPath = ui.getInternals().getActiveViewLocation().getPath();
+//
+//            VaadinSession.getCurrent().setAttribute("selectedDb:" + UI.getCurrent().getUIId(), e.getValue());
+//
+//            ui.access(() -> {
+//                String newPath = ui.getInternals().getActiveViewLocation().getPath();
+//
+//                if (currentPath.equals(newPath)) {
+//                    ui.getPage().reload();
+//                }
+//            });
+//        });
 
 
         HorizontalLayout nurLogo = new HorizontalLayout();
@@ -340,6 +351,6 @@ public class MainLayout extends AppLayout implements AfterNavigationObserver {
 
     @Override
     public void afterNavigation(AfterNavigationEvent event) {
-        updateDbSelector(); // будет вызываться каждый раз при переходе между View
+//        updateDbSelector(); // будет вызываться каждый раз при переходе между View
     }
 }

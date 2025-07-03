@@ -1,8 +1,12 @@
 package com.nurtel.vaskamailio.view;
 
+import com.nurtel.vaskamailio.db.DatabaseContextHolder;
+import com.nurtel.vaskamailio.dispatcher.entity.DispatcherEntity;
+import com.nurtel.vaskamailio.host.repository.HostRepository;
 import com.nurtel.vaskamailio.router.entity.RouterEntity;
 import com.nurtel.vaskamailio.router.repository.RouterRepository;
 import com.vaadin.flow.component.Text;
+import com.vaadin.flow.component.UI;
 import com.vaadin.flow.component.button.Button;
 import com.vaadin.flow.component.button.ButtonVariant;
 import com.vaadin.flow.component.dialog.Dialog;
@@ -21,17 +25,23 @@ import com.vaadin.flow.router.PageTitle;
 import com.vaadin.flow.router.Route;
 import org.springframework.data.domain.Sort;
 
+import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 
 import static com.nurtel.vaskamailio.router.service.RouterService.*;
 
 @Route(value = "/router", layout = MainLayout.class)
 @PageTitle("Kamailio | Router")
 public class RouterView extends VerticalLayout {
-    ListDataProvider<RouterEntity> dataProvider;
+    private final RouterRepository routerRepository;
+    private ListDataProvider<RouterEntity> dataProvider = new ListDataProvider<>(new ArrayList<>());
+    private Grid<DispatcherEntity> dispatcherEntityGrid;
     public static Button addButton = new Button();
 
     public RouterView(RouterRepository routerRepository) {
+        this.routerRepository = routerRepository;
+
         Boolean isAllow = MainLayout.isAllow();
         if (!isAllow){
             Text notAllowedText = new Text("Просмотр страницы недоступен");
@@ -44,6 +54,7 @@ public class RouterView extends VerticalLayout {
 
         addButton = createRouteButton(routerRepository);
 
+        setupDbContext();
         List<RouterEntity> items = routerRepository.findAll(Sort.by("id"));
         dataProvider = new ListDataProvider<>(items);
         routerEntityGrid.setDataProvider(dataProvider);
@@ -186,6 +197,7 @@ public class RouterView extends VerticalLayout {
             }
 
             try {
+                setupDbContext();
                 createRoute(routerRepository, did, setid, description);
 
                 Notification.show("Запись успешно создана", 5000, Notification.Position.BOTTOM_END)
@@ -194,8 +206,7 @@ public class RouterView extends VerticalLayout {
                 Notification.show(exception.toString(), 5000, Notification.Position.BOTTOM_END)
                         .addThemeVariants(NotificationVariant.LUMO_ERROR);
             }
-            refreshGrid(routerRepository, dataProvider);
-//            grid.setItems(routerRepository.findAll(Sort.by("id")));
+            refreshGrid();
         });
         saveButton.addThemeVariants(ButtonVariant.LUMO_PRIMARY);
         Button cancelButton = new Button("Отмена", e -> {
@@ -247,6 +258,7 @@ public class RouterView extends VerticalLayout {
             }
 
             try {
+                setupDbContext();
                 editRoute(routerRepository, route.getId(), did, setid, description);
 
                 Notification.show("Запись успешно изменена", 5000, Notification.Position.BOTTOM_END)
@@ -255,8 +267,7 @@ public class RouterView extends VerticalLayout {
                 Notification.show(exception.toString(), 5000, Notification.Position.BOTTOM_END)
                         .addThemeVariants(NotificationVariant.LUMO_ERROR);
             }
-            refreshGrid(routerRepository, dataProvider);
-//            grid.setItems(routerRepository.findAll(Sort.by("id")));
+            refreshGrid();
             dialog.close();
         });
         saveButton.addThemeVariants(ButtonVariant.LUMO_PRIMARY);
@@ -285,9 +296,9 @@ public class RouterView extends VerticalLayout {
         dialogLayout.add(text);
 
         Button deleteButton = new Button("Удалить", e -> {
+            setupDbContext();
             deleteRoute(routerRepository, route.getId());
-            refreshGrid(routerRepository, dataProvider);
-//            grid.setItems(routerRepository.findAll(Sort.by("id")));
+            refreshGrid();
             dialog.close();
             Notification.show("Запись успешно удалена", 5000, Notification.Position.BOTTOM_END)
                     .addThemeVariants(NotificationVariant.LUMO_SUCCESS);
@@ -315,13 +326,20 @@ public class RouterView extends VerticalLayout {
         setidField.setStepButtonsVisible(true);
         setidField.setValue(0);
         setidField.setMin(0);
-
-//        didField.setHelperText("example: 17888");
-//        setidField.setHelperText("example setid");
-//        descriptionField.setHelperText("example desc");
     }
 
-    private void refreshGrid(RouterRepository routerRepository, ListDataProvider<RouterEntity> dataProvider) {
+    private void setupDbContext() {
+        getSelectedDb().ifPresent(DatabaseContextHolder::set);
+    }
+
+    private Optional<String> getSelectedDb() {
+        return UI.getCurrent().getChildren()
+                .filter(c -> c instanceof MainLayout)
+                .map(c -> ((MainLayout) c).getDbSelector().getValue())
+                .findFirst();
+    }
+
+    private void refreshGrid() {
         List<RouterEntity> updatedItems = routerRepository.findAll(Sort.by("id"));
         dataProvider.getItems().clear();
         dataProvider.getItems().addAll(updatedItems);

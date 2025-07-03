@@ -1,10 +1,12 @@
 package com.nurtel.vaskamailio.view;
 
+import com.nurtel.vaskamailio.db.DatabaseContextHolder;
 import com.nurtel.vaskamailio.dispatcher.entity.DispatcherEntity;
 import com.nurtel.vaskamailio.dispatcher.repository.DispatcherRepository;
 import com.nurtel.vaskamailio.host.entity.HostEntity;
 import com.nurtel.vaskamailio.host.repository.HostRepository;
 import com.vaadin.flow.component.Text;
+import com.vaadin.flow.component.UI;
 import com.vaadin.flow.component.button.Button;
 import com.vaadin.flow.component.button.ButtonVariant;
 import com.vaadin.flow.component.dialog.Dialog;
@@ -25,7 +27,9 @@ import com.vaadin.flow.server.VaadinSession;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.domain.Sort;
 
+import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 
 import static com.nurtel.vaskamailio.dispatcher.service.DispatcherService.*;
 import static com.nurtel.vaskamailio.host.service.HostService.*;
@@ -42,10 +46,17 @@ public class DispatcherView extends VerticalLayout {
     @Value("${kamailio.default.socket3}")
     private String socket3;
 
-    ListDataProvider<DispatcherEntity> dataProvider;
+    private final DispatcherRepository dispatcherRepository;
+    private final HostRepository hostRepository;
+    private ListDataProvider<DispatcherEntity> dataProvider = new ListDataProvider<>(new ArrayList<>());
+    private Grid<DispatcherEntity> dispatcherEntityGrid;
+
     public static Button addButton = new Button();
 
     public DispatcherView(DispatcherRepository dispatcherRepository, HostRepository hostRepository) {
+        this.dispatcherRepository = dispatcherRepository;
+        this.hostRepository = hostRepository;
+
         Boolean isAllow = MainLayout.isAllow();
         if (!isAllow) {
             Text notAllowedText = new Text("Просмотр страницы недоступен");
@@ -58,6 +69,7 @@ public class DispatcherView extends VerticalLayout {
 
         addButton = createDispatcherButton(dispatcherRepository, hostRepository);
 
+        setupDbContext();
         List<DispatcherEntity> items = dispatcherRepository.findAll(Sort.by("id"));
         dataProvider = new ListDataProvider<>(items);
         dispatcherEntityGrid.setDataProvider(dataProvider);
@@ -157,8 +169,6 @@ public class DispatcherView extends VerticalLayout {
                 .setWidth("10%")
                 .setFlexGrow(0);
 
-//        dispatcherEntityGrid.setItems(items);
-
         dispatcherEntityGrid.addThemeVariants(GridVariant.LUMO_COLUMN_BORDERS);
         dispatcherEntityGrid.addThemeVariants(GridVariant.LUMO_ROW_STRIPES);
     }
@@ -213,6 +223,7 @@ public class DispatcherView extends VerticalLayout {
             }
 
             try {
+                setupDbContext();
                 createDispatcherEntity(
                         dispatcherRepository,
                         setid,
@@ -235,7 +246,7 @@ public class DispatcherView extends VerticalLayout {
                 Notification.show(exception.toString(), 5000, Notification.Position.BOTTOM_END)
                         .addThemeVariants(NotificationVariant.LUMO_ERROR);
             }
-            refreshGrid(dispatcherRepository, dataProvider);
+            refreshGrid();
         });
         saveButton.addThemeVariants(ButtonVariant.LUMO_PRIMARY);
         Button cancelButton = new Button("Отмена", e -> dialog.close());
@@ -305,6 +316,7 @@ public class DispatcherView extends VerticalLayout {
             }
 
             try {
+                setupDbContext();
                 HostEntity host = getHostByIp(hostRepository, getIpFromDestination(dispatcherEntity.getDestination()));
                 editHost(
                         hostRepository,
@@ -332,7 +344,7 @@ public class DispatcherView extends VerticalLayout {
                         .addThemeVariants(NotificationVariant.LUMO_ERROR);
             }
 
-            refreshGrid(dispatcherRepository, dataProvider);
+            refreshGrid();
             dialog.close();
         });
         saveButton.addThemeVariants(ButtonVariant.LUMO_PRIMARY);
@@ -369,9 +381,10 @@ public class DispatcherView extends VerticalLayout {
                         .addThemeVariants(NotificationVariant.LUMO_ERROR);
             }
 
+            setupDbContext();
             deleteDispatcherEntity(dispatcherRepository, dispatcherEntity.getId());
 
-            refreshGrid(dispatcherRepository, dataProvider);
+            refreshGrid();
 
             dialog.close();
             Notification.show("Запись успешно удалена", 5000, Notification.Position.BOTTOM_END)
@@ -421,16 +434,25 @@ public class DispatcherView extends VerticalLayout {
 
         descriptionField.setWidth("255px");
 
-//        setidField.setHelperText("0-999");
         destinationField.setHelperText("sip:172.27.x.x:5060");
         flagsField.setHelperText("0 - default");
-//        priorityField.setHelperText("example priority");
 
         attrsField.setHelperText("socket=udp:172.27.x.x:5060");
         descriptionField.setHelperText("hostname");
     }
 
-    private void refreshGrid(DispatcherRepository dispatcherRepository, ListDataProvider<DispatcherEntity> dataProvider) {
+    private void setupDbContext() {
+        getSelectedDb().ifPresent(DatabaseContextHolder::set);
+    }
+
+    private Optional<String> getSelectedDb() {
+        return UI.getCurrent().getChildren()
+                .filter(c -> c instanceof MainLayout)
+                .map(c -> ((MainLayout) c).getDbSelector().getValue())
+                .findFirst();
+    }
+
+    private void refreshGrid() {
         List<DispatcherEntity> updatedItems = dispatcherRepository.findAll(Sort.by("id"));
         dataProvider.getItems().clear();
         dataProvider.getItems().addAll(updatedItems);

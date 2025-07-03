@@ -1,8 +1,10 @@
 package com.nurtel.vaskamailio.view;
 
+import com.nurtel.vaskamailio.db.DatabaseContextHolder;
 import com.nurtel.vaskamailio.host.repository.HostRepository;
 import com.nurtel.vaskamailio.host.entity.HostEntity;
 import com.vaadin.flow.component.Text;
+import com.vaadin.flow.component.UI;
 import com.vaadin.flow.component.button.Button;
 import com.vaadin.flow.component.button.ButtonVariant;
 import com.vaadin.flow.component.checkbox.Checkbox;
@@ -21,33 +23,41 @@ import com.vaadin.flow.router.PageTitle;
 import com.vaadin.flow.router.Route;
 import org.springframework.data.domain.Sort;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
+import java.util.Optional;
 
 import static com.nurtel.vaskamailio.host.service.HostService.*;
 
 @Route(value = "/hosts", layout = MainLayout.class)
 @PageTitle("Kamailio | Hosts")
 public class HostView extends VerticalLayout {
-    ListDataProvider<HostEntity> dataProvider;
+    private final HostRepository hostRepository;
+    private ListDataProvider<HostEntity> dataProvider = new ListDataProvider<>(new ArrayList<>());
+    private Grid<HostEntity> hostEntityGrid;
     public static Button addButton = new Button();
 
     public HostView(HostRepository hostRepository) {
+        this.hostRepository = hostRepository;
+
         Boolean isAllow = MainLayout.isAllow();
-        if (!isAllow){
+        if (!isAllow) {
             Text notAllowedText = new Text("Просмотр страницы недоступен");
             add(notAllowedText);
             return;
         }
 
-        Grid<HostEntity> HostEntityGrid = new Grid<>(HostEntity.class, false);
-        HostEntityGrid.getStyle().set("height", "80vh");
+        setupDbContext();
+
+        hostEntityGrid = new Grid<>(HostEntity.class, false);
+        hostEntityGrid.getStyle().set("height", "80vh");
 
         addButton = createHostButton(hostRepository);
 
         List<HostEntity> items = hostRepository.findAll(Sort.by("id"));
         dataProvider = new ListDataProvider<>(items);
-        HostEntityGrid.setDataProvider(dataProvider);
+        hostEntityGrid.setDataProvider(dataProvider);
 
         Div alert = new Div(new Text("⚠️ Данные синхронизированы с dispatcher. Изменения вручную — только в исключительных случаях! ⚠️"));
         alert.getElement().getThemeList().add("badge error");
@@ -59,43 +69,43 @@ public class HostView extends VerticalLayout {
         horizontalLayout.setWidthFull();
         horizontalLayout.setJustifyContentMode(JustifyContentMode.BETWEEN);
 
-        horizontalLayout.add(addButton, alert,  filterField);
+        horizontalLayout.add(addButton, alert, filterField);
         add(horizontalLayout);
 
-        add(HostEntityGrid);
+        add(hostEntityGrid);
 
-        HostEntityGrid.addColumn(HostEntity::getId)
+        hostEntityGrid.addColumn(HostEntity::getId)
                 .setHeader("ID")
                 .setWidth("5%")
                 .setFlexGrow(0)
                 .setSortable(true)
                 .setResizable(true);
 
-        HostEntityGrid.addColumn(HostEntity::getIp)
+        hostEntityGrid.addColumn(HostEntity::getIp)
                 .setHeader("IP")
                 .setSortable(true)
                 .setResizable(true);
 
-//        HostEntityGrid.addColumn(HostEntity::getKeyType)
+//        hostEntityGrid.addColumn(HostEntity::getKeyType)
 //                .setHeader("Key type")
 //                .setWidth("10%")
 //                .setFlexGrow(0)
 //                .setSortable(true)
 //                .setResizable(true);
 //
-//        HostEntityGrid.addColumn(HostEntity::getValueType)
+//        hostEntityGrid.addColumn(HostEntity::getValueType)
 //                .setHeader("Value type")
 //                .setWidth("10%")
 //                .setFlexGrow(0)
 //                .setSortable(true)
 //                .setResizable(true);
 
-        HostEntityGrid.addColumn(HostEntity::getDescription)
+        hostEntityGrid.addColumn(HostEntity::getDescription)
                 .setHeader("Описание")
                 .setSortable(true)
                 .setResizable(true);
 
-        HostEntityGrid.addComponentColumn(entity -> {
+        hostEntityGrid.addComponentColumn(entity -> {
                     Checkbox checkbox = new Checkbox();
                     checkbox.setValue(Objects.equals(entity.getIsActive(), "1"));
                     checkbox.setReadOnly(true); // Чтобы пользователь не мог менять значение
@@ -104,7 +114,7 @@ public class HostView extends VerticalLayout {
                 .setSortable(true)
                 .setResizable(true);
 
-        HostEntityGrid.addComponentColumn(HostEntity -> {
+        hostEntityGrid.addComponentColumn(HostEntity -> {
                     Button editButton = editHostButton(hostRepository, HostEntity);
                     editButton.addThemeVariants(ButtonVariant.LUMO_WARNING);
                     editButton.getElement().getStyle()
@@ -123,7 +133,7 @@ public class HostView extends VerticalLayout {
                 .setWidth("10%")
                 .setFlexGrow(0);
 
-        HostEntityGrid.addComponentColumn(HostEntity -> {
+        hostEntityGrid.addComponentColumn(HostEntity -> {
                     Button deleteButton = deleteHostButton(hostRepository, HostEntity);
                     deleteButton.addThemeVariants(ButtonVariant.LUMO_ERROR);
                     deleteButton.getElement().getStyle()
@@ -142,10 +152,10 @@ public class HostView extends VerticalLayout {
                 .setWidth("10%")
                 .setFlexGrow(0);
 
-//        HostEntityGrid.setItems(hostRepository.findAll(Sort.by("id")));
+//        hostEntityGrid.setItems(hostRepository.findAll(Sort.by("id")));
 
-        HostEntityGrid.addThemeVariants(GridVariant.LUMO_COLUMN_BORDERS);
-        HostEntityGrid.addThemeVariants(GridVariant.LUMO_ROW_STRIPES);
+        hostEntityGrid.addThemeVariants(GridVariant.LUMO_COLUMN_BORDERS);
+        hostEntityGrid.addThemeVariants(GridVariant.LUMO_ROW_STRIPES);
     }
 
     private TextField getFilterField() {
@@ -191,6 +201,7 @@ public class HostView extends VerticalLayout {
             }
 
             try {
+                setupDbContext();
                 createHost(hostRepository, ip, isActive, description);
 
                 Notification.show("Запись успешно создана", 5000, Notification.Position.BOTTOM_END)
@@ -199,7 +210,7 @@ public class HostView extends VerticalLayout {
                 Notification.show(exception.toString(), 5000, Notification.Position.BOTTOM_END)
                         .addThemeVariants(NotificationVariant.LUMO_ERROR);
             }
-            refreshGrid(hostRepository, dataProvider);
+            refreshGrid();
         });
         saveButton.addThemeVariants(ButtonVariant.LUMO_PRIMARY);
         Button cancelButton = new Button("Отмена", e -> {
@@ -254,6 +265,7 @@ public class HostView extends VerticalLayout {
             }
 
             try {
+                setupDbContext();
                 editHost(hostRepository, host.getId(), ip, isActive, description);
 
                 Notification.show("Запись успешно изменена", 5000, Notification.Position.BOTTOM_END)
@@ -262,7 +274,7 @@ public class HostView extends VerticalLayout {
                 Notification.show(exception.toString(), 5000, Notification.Position.BOTTOM_END)
                         .addThemeVariants(NotificationVariant.LUMO_ERROR);
             }
-            refreshGrid(hostRepository, dataProvider);
+            refreshGrid();
             dialog.close();
         });
         saveButton.addThemeVariants(ButtonVariant.LUMO_PRIMARY);
@@ -291,8 +303,9 @@ public class HostView extends VerticalLayout {
         dialogLayout.add(text);
 
         Button deleteButton = new Button("Удалить", e -> {
+            setupDbContext();
             deleteHost(hostRepository, host.getId());
-            refreshGrid(hostRepository, dataProvider);
+            refreshGrid();
             dialog.close();
             Notification.show("Запись успешно удалена", 5000, Notification.Position.BOTTOM_END)
                     .addThemeVariants(NotificationVariant.LUMO_SUCCESS);
@@ -318,10 +331,21 @@ public class HostView extends VerticalLayout {
         ipField.setHelperText("172.27.x.x");
     }
 
-    private void refreshGrid(HostRepository hostRepository, ListDataProvider<HostEntity> dataProvider) {
-        List<HostEntity> updatedItems = hostRepository.findAll(Sort.by("id"));
-        dataProvider.getItems().clear();
-        dataProvider.getItems().addAll(updatedItems);
-        dataProvider.refreshAll();
+    private void setupDbContext() {
+        getSelectedDb().ifPresent(DatabaseContextHolder::set);
+    }
+
+    private Optional<String> getSelectedDb() {
+        return UI.getCurrent().getChildren()
+                .filter(c -> c instanceof MainLayout)
+                .map(c -> ((MainLayout) c).getDbSelector().getValue())
+                .findFirst();
+    }
+
+    private void refreshGrid() {
+        setupDbContext();
+        List<HostEntity> items = hostRepository.findAll(Sort.by("id"));
+        dataProvider = new ListDataProvider<>(items);
+        hostEntityGrid.setDataProvider(dataProvider);
     }
 }
