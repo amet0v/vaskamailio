@@ -40,7 +40,7 @@ import org.springframework.security.core.AuthenticationException;
 
 import java.util.List;
 
-public class MainLayout extends AppLayout implements AfterNavigationObserver {
+public class MainLayout extends AppLayout {
     private static String ldapUrl;
     private static String ldapDomain;
     private static String ldapUser;
@@ -56,16 +56,6 @@ public class MainLayout extends AppLayout implements AfterNavigationObserver {
     public ComboBox<String> getDbSelector() {
         return dbSelector;
     }
-
-//    public void updateDbSelector() {
-//        String selectedDb = (String) VaadinSession.getCurrent().getAttribute("selectedDb:" + UI.getCurrent().getUIId());
-//        System.out.println(UI.getCurrent().getUIId());
-//        if (selectedDb == null) selectedDb = "kamailio01";
-//
-//        if (!selectedDb.equals(dbSelector.getValue())) {
-//            dbSelector.setValue(selectedDb);
-//        }
-//    }
 
     public static Boolean isAllow() {
         String departmentString = "Группа управления VAS-платформами";
@@ -120,24 +110,7 @@ public class MainLayout extends AppLayout implements AfterNavigationObserver {
 
         dbSelector.addValueChangeListener(e -> {
             UI.getCurrent().refreshCurrentRoute(false);
-//            HostView.refreshGrid();
         });
-
-//        dbSelector.addValueChangeListener(e -> {
-//            UI ui = UI.getCurrent();
-//            String currentPath = ui.getInternals().getActiveViewLocation().getPath();
-//
-//            VaadinSession.getCurrent().setAttribute("selectedDb:" + UI.getCurrent().getUIId(), e.getValue());
-//
-//            ui.access(() -> {
-//                String newPath = ui.getInternals().getActiveViewLocation().getPath();
-//
-//                if (currentPath.equals(newPath)) {
-//                    ui.getPage().reload();
-//                }
-//            });
-//        });
-
 
         HorizontalLayout nurLogo = new HorizontalLayout();
         nurLogo.setSpacing(false);
@@ -347,10 +320,5 @@ public class MainLayout extends AppLayout implements AfterNavigationObserver {
                 .set("height", "100vh");
 
         addToDrawer(sidebar);
-    }
-
-    @Override
-    public void afterNavigation(AfterNavigationEvent event) {
-//        updateDbSelector(); // будет вызываться каждый раз при переходе между View
     }
 }
