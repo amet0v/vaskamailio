@@ -257,8 +257,9 @@ public class DispatcherView extends VerticalLayout {
             destinationField.clear();
             descriptionField.clear();
 
-            String selectedDb = (String) VaadinSession.getCurrent().getAttribute("selectedDb");
-            String socketValue = switch (selectedDb != null ? selectedDb : "kamailio01") {
+            String selectedDb = getSelectedDb().get();
+            System.out.println(selectedDb);
+            String socketValue = switch (selectedDb) {
                 case "kamailio01" -> socket1;
                 case "kamailio02" -> socket2;
                 case "kamailio03" -> socket3;
