@@ -1,6 +1,6 @@
 package com.nurtel.vaskamailio.view;
 
-import com.nurtel.vaskamailio.db.DatabaseContextHolder;
+import com.nurtel.vaskamailio.db.config.DatabaseContextHolder;
 import com.nurtel.vaskamailio.host.repository.HostRepository;
 import com.nurtel.vaskamailio.host.entity.HostEntity;
 import com.vaadin.flow.component.Text;

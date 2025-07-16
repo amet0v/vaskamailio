@@ -1,6 +1,6 @@
 package com.nurtel.vaskamailio.view;
 
-import com.nurtel.vaskamailio.db.DatabaseContextHolder;
+import com.nurtel.vaskamailio.db.config.DatabaseContextHolder;
 import com.nurtel.vaskamailio.dispatcher.entity.DispatcherEntity;
 import com.nurtel.vaskamailio.dispatcher.repository.DispatcherRepository;
 import com.nurtel.vaskamailio.host.entity.HostEntity;
@@ -23,7 +23,6 @@ import com.vaadin.flow.component.textfield.TextField;
 import com.vaadin.flow.data.provider.ListDataProvider;
 import com.vaadin.flow.router.PageTitle;
 import com.vaadin.flow.router.Route;
-import com.vaadin.flow.server.VaadinSession;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.domain.Sort;
 
@@ -50,7 +49,6 @@ public class DispatcherView extends VerticalLayout {
     private final HostRepository hostRepository;
     private ListDataProvider<DispatcherEntity> dataProvider = new ListDataProvider<>(new ArrayList<>());
     private Grid<DispatcherEntity> dispatcherEntityGrid;
-
     public static Button addButton = new Button();
 
     public DispatcherView(DispatcherRepository dispatcherRepository, HostRepository hostRepository) {

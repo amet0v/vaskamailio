@@ -1,4 +1,4 @@
-package com.nurtel.vaskamailio.db;
+package com.nurtel.vaskamailio.db.config;
 
 import org.springframework.jdbc.datasource.lookup.AbstractRoutingDataSource;
 

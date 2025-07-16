@@ -1,5 +1,7 @@
 package com.nurtel.vaskamailio.view;
 
+import com.nurtel.vaskamailio.db.entity.DbEntity;
+import com.nurtel.vaskamailio.db.repository.DbRepository;
 import com.unboundid.ldap.sdk.LDAPConnection;
 import com.unboundid.ldap.sdk.SearchRequest;
 import com.unboundid.ldap.sdk.SearchResult;
@@ -39,6 +41,7 @@ import org.springframework.security.core.Authentication;
 import org.springframework.security.core.AuthenticationException;
 
 import java.util.List;
+import java.util.stream.Collectors;
 
 public class MainLayout extends AppLayout {
     private static String ldapUrl;
@@ -73,7 +76,8 @@ public class MainLayout extends AppLayout {
             @Value("${ldap.domain}") String ldapDomain,
             @Value("${ldap.user}") String ldapUser,
             @Value("${ldap.password}") String ldapPassword,
-            @Value("${ldap.base}") String ldapBase
+            @Value("${ldap.base}") String ldapBase,
+            DbRepository dbRepository
     ) {
         this.ldapUrl = ldapUrl;
         this.ldapDomain = ldapDomain;
@@ -81,11 +85,11 @@ public class MainLayout extends AppLayout {
         this.ldapPassword = ldapPassword;
         this.ldapBase = ldapBase;
 
-        createHeader();
+        createHeader(dbRepository);
         createSidebar();
     }
 
-    private void createHeader() {
+    private void createHeader(DbRepository dbRepository) {
         StreamResource imageResource = new StreamResource("logo_o.svg",
                 () -> getClass().getResourceAsStream("/images/logo_o.svg"));
 
@@ -99,8 +103,12 @@ public class MainLayout extends AppLayout {
                 .set("font-size", "var(--lumo-font-size-xl)")
                 .set("color", "#ffffff");
 
-        dbSelector.setItems("kamailio01", "kamailio02", "kamailio03");
-        dbSelector.setValue("kamailio01");
+        List<String> dbSelectorItems = dbRepository.findAllByOrderByIdAsc()
+                .stream()
+                .map(DbEntity::getName)
+                .toList();
+        dbSelector.setItems(dbSelectorItems);
+        dbSelector.setValue(dbSelectorItems.getFirst());
 
 //        updateDbSelector();
 
@@ -279,7 +287,11 @@ public class MainLayout extends AppLayout {
         managementIcon.setColor("#b8c7ce");
         SideNavItem managementItem = new SideNavItem("Управление", ManagementView.class, managementIcon);
 
-        List<SideNavItem> sideNavItems = List.of(routerDidItem, dispatcherItem, hostsItem, managementItem);
+        Icon dbIcon = VaadinIcon.DATABASE.create();
+        dbIcon.setColor("#b8c7ce");
+        SideNavItem dbItem = new SideNavItem("Базы данных", DbView.class, dbIcon);
+
+        List<SideNavItem> sideNavItems = List.of(routerDidItem, dispatcherItem, hostsItem, managementItem, dbItem);
 
         for (SideNavItem item : sideNavItems) {
             item.getStyle()
