@@ -3,6 +3,8 @@ package com.nurtel.vaskamailio.view;
 import com.jcraft.jsch.ChannelExec;
 import com.jcraft.jsch.JSch;
 import com.jcraft.jsch.Session;
+import com.nurtel.vaskamailio.db.entity.DbEntity;
+import com.nurtel.vaskamailio.db.repository.DbRepository;
 import com.vaadin.flow.component.Html;
 import com.vaadin.flow.component.Text;
 import com.vaadin.flow.component.button.Button;
@@ -21,28 +23,20 @@ import org.springframework.beans.factory.annotation.Value;
 import java.io.BufferedReader;
 import java.io.InputStream;
 import java.io.InputStreamReader;
+import java.util.List;
 
 @Route(value = "/management", layout = MainLayout.class)
 @PageTitle("Kamailio | Management")
 public class ManagementView extends VerticalLayout {
-
-    private final String sshIp1;
-    private final String sshIp2;
-    private final String sshIp3;
     private final String sshLogin;
     private final String sshPassword;
     private final TextArea outputArea = new TextArea("Вывод консоли");
 
     public ManagementView(
-            @Value("${ssh.ip1}") String sshIp1,
-            @Value("${ssh.ip2}") String sshIp2,
-            @Value("${ssh.ip3}") String sshIp3,
             @Value("${ssh.login}") String sshLogin,
-            @Value("${ssh.password}") String sshPassword
+            @Value("${ssh.password}") String sshPassword,
+            DbRepository dbRepository
     ) {
-        this.sshIp1 = sshIp1;
-        this.sshIp2 = sshIp2;
-        this.sshIp3 = sshIp3;
         this.sshLogin = sshLogin;
         this.sshPassword = sshPassword;
 
@@ -56,48 +50,42 @@ public class ManagementView extends VerticalLayout {
         outputArea.setHeight("50vh");
         outputArea.setReadOnly(true);
 
-        HorizontalLayout serversLayout = new HorizontalLayout();
-        serversLayout.setWidthFull();
-        serversLayout.setSpacing(true);
+        List<DbEntity> dbEntityList = dbRepository.findAllByOrderByIdAsc();
 
-        serversLayout.add(
-                createServerColumn("kamailio01", sshIp1),
-                createServerColumn("kamailio02", sshIp2),
-                createServerColumn("kamailio03", sshIp3)
-        );
-
-        add(serversLayout, outputArea);
+        for (DbEntity db : dbEntityList) {
+            HorizontalLayout buttonsLayout = createButtonLayout(db);
+            add(buttonsLayout);
+        }
+        add(outputArea);
     }
 
-    private VerticalLayout createServerColumn(String name, String ip) {
-        VerticalLayout column = new VerticalLayout();
-        column.setPadding(false);
-        column.setSpacing(true);
-        column.setWidth("100%");
-        column.getStyle().set("border", "1px solid #ccc");
-        column.getStyle().set("padding", "10px");
-        column.getStyle().set("flex", "1");
+    private HorizontalLayout createButtonLayout(DbEntity db) {
+        HorizontalLayout hl = new HorizontalLayout();
+        hl.setPadding(false);
+        hl.setSpacing(true);
+        hl.setWidth("100%");
+        hl.getStyle().set("border", "1px solid #ccc");
+        hl.getStyle().set("padding", "10px");
+        hl.getStyle().set("flex", "1");
 
-        column.add(new Html("<h4>" + name + "</h4>"));
+        hl.add(new Html("<h4>" + db.getName() + "</h4>"));
 
-//        column.add(new Button("Read cfg", VaadinIcon.FILE.create(),
-//                e -> runCommandOn(ip, "cat /etc/kamailio/kamailio.cfg")));
-        column.add(new Button("Reload routes", VaadinIcon.REFRESH.create(),
-                e -> runCommandOn(ip, "sudo /usr/sbin/kamcmd htable.reload routes")));
-        column.add(new Button("Reload hosts", VaadinIcon.REFRESH.create(),
-                e -> runCommandOn(ip, "sudo /usr/sbin/kamcmd htable.reload hosts")));
+        hl.add(new Button("Reload routes", VaadinIcon.REFRESH.create(),
+                e -> runCommandOn(db.getIp(), "sudo /usr/sbin/kamcmd htable.reload routes")));
+        hl.add(new Button("Reload hosts", VaadinIcon.REFRESH.create(),
+                e -> runCommandOn(db.getIp(), "sudo /usr/sbin/kamcmd htable.reload hosts")));
 
         Button restartBtn = new Button("Restart kamailio", VaadinIcon.POWER_OFF.create(), e -> {
             Dialog dialog = new Dialog();
             dialog.setHeaderTitle("⚠️ Подтвердите действие ⚠️");
             Html alert = new Html("<div style='font-size:16px;'> " +
-                    "Выполнение команды <b>systemctl restart kamailio.service</b> на " + name +
+                    "Выполнение команды <b>systemctl restart kamailio.service</b> на " + db.getName() +
                     "<br>повлияет на продуктивный трафик. Продолжить?</div>");
             dialog.add(alert);
 
             Button confirmButton = new Button("Перезагрузить", ev -> {
                 dialog.close();
-                runCommandOn(ip, "sudo /bin/systemctl restart kamailio.service");
+                runCommandOn(db.getIp(), "sudo /bin/systemctl restart kamailio.service");
             });
 
             Button cancelButton = new Button("Отмена", ev -> dialog.close());
@@ -106,12 +94,12 @@ public class ManagementView extends VerticalLayout {
             dialog.open();
         });
 
-        column.add(restartBtn);
+        hl.add(restartBtn);
 
-        column.add(new Button("Kamailio status", VaadinIcon.CHECK_CIRCLE_O.create(),
-                e -> runCommandOn(ip, "sudo /bin/systemctl status kamailio.service")));
+        hl.add(new Button("Kamailio status", VaadinIcon.CHECK_CIRCLE_O.create(),
+                e -> runCommandOn(db.getIp(), "sudo /bin/systemctl status kamailio.service")));
 
-        return column;
+        return hl;
     }
 
     private void runCommandOn(String host, String command) {
