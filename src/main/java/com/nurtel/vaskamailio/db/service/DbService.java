@@ -10,7 +10,7 @@ import java.util.Optional;
 
 @Service
 public class DbService {
-    public DbEntity createDb(
+    public static DbEntity createDb(
             DbRepository dbRepository,
             String ip,
             String name,
@@ -32,7 +32,7 @@ public class DbService {
         return db;
     }
 
-    public DbEntity editDb(
+    public static DbEntity editDb(
             DbRepository dbRepository,
             Long id,
             String ip,
@@ -57,7 +57,7 @@ public class DbService {
         return db;
     }
 
-    public void deleteDb(DbRepository dbRepository, Long id) {
+    public static void deleteDb(DbRepository dbRepository, Long id) {
         dbRepository.deleteById(id);
     }
 

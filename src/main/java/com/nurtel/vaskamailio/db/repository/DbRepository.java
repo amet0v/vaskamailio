@@ -6,8 +6,11 @@ import org.springframework.stereotype.Repository;
 
 import java.util.Arrays;
 import java.util.List;
+import java.util.Optional;
 
 @Repository
 public interface DbRepository extends JpaRepository<DbEntity, Long> {
     List<DbEntity> findAllByOrderByIdAsc();
+
+    Optional<DbEntity> findByName(String selectedDb);
 }
