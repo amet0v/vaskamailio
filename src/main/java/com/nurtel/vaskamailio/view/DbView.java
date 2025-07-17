@@ -2,9 +2,12 @@ package com.nurtel.vaskamailio.view;
 
 import com.nurtel.vaskamailio.db.entity.DbEntity;
 import com.nurtel.vaskamailio.db.repository.DbRepository;
+import com.nurtel.vaskamailio.db.service.DbService;
+import com.nurtel.vaskamailio.dispatcher.repository.DispatcherRepository;
 import com.vaadin.flow.component.Text;
 import com.vaadin.flow.component.button.Button;
 import com.vaadin.flow.component.button.ButtonVariant;
+import com.vaadin.flow.component.combobox.ComboBox;
 import com.vaadin.flow.component.dialog.Dialog;
 import com.vaadin.flow.component.grid.Grid;
 import com.vaadin.flow.component.grid.GridVariant;
@@ -30,11 +33,13 @@ import static com.nurtel.vaskamailio.db.service.DbService.*;
 @PageTitle("Kamailio | Databases")
 public class DbView extends VerticalLayout {
     private final DbRepository dbRepository;
+    private final DispatcherRepository dispatcherRepository;
     private ListDataProvider<DbEntity> dataProvider = new ListDataProvider<>(new ArrayList<>());
     private Grid<DbEntity> dbEntityGrid;
-    public static Button addButton = new Button();
-    public DbView(DbRepository dbRepository) {
+
+    public DbView(DbRepository dbRepository, DispatcherRepository dispatcherRepository) {
         this.dbRepository = dbRepository;
+        this.dispatcherRepository = dispatcherRepository;
 
         Boolean isAllow = MainLayout.isAllow();
         if (!isAllow) {
@@ -46,296 +51,341 @@ public class DbView extends VerticalLayout {
         dbEntityGrid = new Grid<>(DbEntity.class, false);
         dbEntityGrid.getStyle().set("height", "80vh");
 
-        addButton = createDbButton(dbRepository);
+        Button addButton = createDbButton(dbRepository);
+        Button copyDbButton = new Button("Копировать БД", e -> {
+            Dialog dialog = new Dialog();
 
-        List<DbEntity> items = dbRepository.findAll(Sort.by("id"));
-        dataProvider = new ListDataProvider<>(items);
-        dbEntityGrid.setDataProvider(dataProvider);
+            List<DbEntity> dbList = dbRepository.findAllByOrderByIdAsc();
 
-        Div info = new Div(new Text("ℹ\uFE0F Данные берутся из БД сервера, где работает приложение. Переключение БД не влияет на выборку. ℹ\uFE0F"));
-        info.getElement().getThemeList().add("badge");
-        info.getStyle().set("font-size", "16px");
+            ComboBox<DbEntity> sourceComboBox = new ComboBox<>("Источник");
+            sourceComboBox.setItems(dbList);
+            sourceComboBox.setItemLabelGenerator(DbEntity::getName); // или getIp
 
-        TextField filterField = getFilterField();
+            ComboBox<DbEntity> targetComboBox = new ComboBox<>("Цель");
+            targetComboBox.setItems(dbList);
+            targetComboBox.setItemLabelGenerator(DbEntity::getName);
 
-        HorizontalLayout horizontalLayout = new HorizontalLayout();
-        horizontalLayout.setWidthFull();
-        horizontalLayout.setJustifyContentMode(JustifyContentMode.BETWEEN);
+            Button runButton = new Button("Выполнить", click -> {
+                DbEntity source = sourceComboBox.getValue();
+                DbEntity target = targetComboBox.getValue();
 
-        horizontalLayout.add(addButton, info, filterField);
-        add(horizontalLayout);
+                if (source == null || target == null) {
+                    Notification.show("Выберите обе базы", 5000, Notification.Position.BOTTOM_END)
+                            .addThemeVariants(NotificationVariant.LUMO_ERROR);
+                    return;
+                }
+                if (source == target) {
+                    Notification.show("Выберите разные базы", 5000, Notification.Position.BOTTOM_END)
+                            .addThemeVariants(NotificationVariant.LUMO_ERROR);
+                    return;
+                }
 
-        add(dbEntityGrid);
+                String result = DbService.copyDb(source.getIp(), target.getIp());
+                Notification.show(result, 5000, Notification.Position.BOTTOM_END)
+                        .addThemeVariants(NotificationVariant.LUMO_SUCCESS);;
+                try {
+                    result = DbService.editAttrs(dbRepository, dispatcherRepository, target.getIp());
+                    Notification.show(result, 5000, Notification.Position.BOTTOM_END)
+                            .addThemeVariants(NotificationVariant.LUMO_SUCCESS);;
+                } catch (NotFoundException ex) {
+                    Notification.show(ex.toString(), 5000, Notification.Position.BOTTOM_END)
+                            .addThemeVariants(NotificationVariant.LUMO_ERROR);
+                }
+                dialog.close();
+            });
 
-        dbEntityGrid.addColumn(DbEntity::getId)
-                .setHeader("ID")
-                .setWidth("5%")
-                .setFlexGrow(0)
-                .setSortable(true)
-                .setResizable(true);
+            dialog.add(sourceComboBox, targetComboBox, runButton);
+            dialog.open();
+        });
 
-        dbEntityGrid.addColumn(DbEntity::getIp)
-                .setHeader("IP")
-                .setSortable(true)
-                .setResizable(true);
+            List<DbEntity> items = dbRepository.findAll(Sort.by("id"));
+            dataProvider = new ListDataProvider<>(items);
+            dbEntityGrid.setDataProvider(dataProvider);
 
-        dbEntityGrid.addColumn(DbEntity::getName)
-                .setHeader("Name")
-                .setSortable(true)
-                .setResizable(true);
+            Div info = new Div(new Text("ℹ\uFE0F Данные берутся из БД сервера, где работает приложение. Переключение БД не влияет на выборку. ℹ\uFE0F"));
+            info.getElement().getThemeList().add("badge");
+            info.getStyle().set("font-size", "16px");
 
-        dbEntityGrid.addColumn(DbEntity::getMscSocket)
-                .setHeader("MSC socket")
-                .setSortable(true)
-                .setResizable(true);
+            TextField filterField = getFilterField();
 
-        dbEntityGrid.addColumn(DbEntity::getAsteriskSocket)
-                .setHeader("Asterisk socket")
-                .setSortable(true)
-                .setResizable(true);
+            HorizontalLayout horizontalLayout = new HorizontalLayout();
+            horizontalLayout.setWidthFull();
+            horizontalLayout.setJustifyContentMode(JustifyContentMode.BETWEEN);
 
-        dbEntityGrid.addColumn(DbEntity::getLogin)
-                .setHeader("Login")
-                .setSortable(true)
-                .setResizable(true);
+            horizontalLayout.add(addButton, copyDbButton, info, filterField);
+            add(horizontalLayout);
 
-        dbEntityGrid.addColumn(DbEntity::getPassword)
-                .setHeader("Password")
-                .setSortable(true)
-                .setResizable(true);
+            add(dbEntityGrid);
 
-        dbEntityGrid.addComponentColumn(dbEntity -> {
-                    Button editButton = editDbButton(dbRepository, dbEntity);
-                    editButton.addThemeVariants(ButtonVariant.LUMO_WARNING);
-                    editButton.getElement().getStyle()
-                            .set("font-size", "20px");
+            dbEntityGrid.addColumn(DbEntity::getId)
+                    .setHeader("ID")
+                    .setWidth("5%")
+                    .setFlexGrow(0)
+                    .setSortable(true)
+                    .setResizable(true);
 
-                    Div wrapper = new Div(editButton);
-                    wrapper.getStyle()
-                            .set("display", "flex")
-                            .set("justify-content", "center")
-                            .set("align-items", "center")
-                            .set("height", "100%");
+            dbEntityGrid.addColumn(DbEntity::getIp)
+                    .setHeader("IP")
+                    .setSortable(true)
+                    .setResizable(true);
 
-                    return wrapper;
-                })
-                .setHeader("Редактировать")
-                .setWidth("10%")
-                .setFlexGrow(0);
+            dbEntityGrid.addColumn(DbEntity::getName)
+                    .setHeader("Name")
+                    .setSortable(true)
+                    .setResizable(true);
 
-        dbEntityGrid.addComponentColumn(dbEntity -> {
-                    Button deleteButton = deleteDbButton(dbRepository, dbEntity);
-                    deleteButton.addThemeVariants(ButtonVariant.LUMO_ERROR);
-                    deleteButton.getElement().getStyle()
-                            .set("font-size", "20px");
+            dbEntityGrid.addColumn(DbEntity::getMscSocket)
+                    .setHeader("MSC socket")
+                    .setSortable(true)
+                    .setResizable(true);
 
-                    Div wrapper = new Div(deleteButton);
-                    wrapper.getStyle()
-                            .set("display", "flex")
-                            .set("justify-content", "center")
-                            .set("align-items", "center")
-                            .set("height", "100%");
+            dbEntityGrid.addColumn(DbEntity::getAsteriskSocket)
+                    .setHeader("Asterisk socket")
+                    .setSortable(true)
+                    .setResizable(true);
 
-                    return wrapper;
-                })
-                .setHeader("Удалить")
-                .setWidth("10%")
-                .setFlexGrow(0);
+            dbEntityGrid.addColumn(DbEntity::getLogin)
+                    .setHeader("Login")
+                    .setSortable(true)
+                    .setResizable(true);
 
-        dbEntityGrid.addThemeVariants(GridVariant.LUMO_COLUMN_BORDERS);
-        dbEntityGrid.addThemeVariants(GridVariant.LUMO_ROW_STRIPES);
-    }
+            dbEntityGrid.addColumn(DbEntity::getPassword)
+                    .setHeader("Password")
+                    .setSortable(true)
+                    .setResizable(true);
 
-    private TextField getFilterField() {
-        TextField filterField = new TextField();
-        filterField.setPlaceholder("Поиск...");
-        filterField.setPrefixComponent(new Icon("lumo", "search"));
-        filterField.setClearButtonVisible(true);
-        filterField.setWidth("300px");
-        filterField.addValueChangeListener(e ->
-                dataProvider.setFilter(db -> {
-                    String value = e.getValue().toLowerCase();
-                    return (db.getName() != null && db.getName().toLowerCase().contains(value))
-                            || (db.getIp() != null && db.getIp().toLowerCase().contains(value));
-                }));
-        return filterField;
-    }
+            dbEntityGrid.addComponentColumn(dbEntity -> {
+                        Button editButton = editDbButton(dbRepository, dbEntity);
+                        editButton.addThemeVariants(ButtonVariant.LUMO_WARNING);
+                        editButton.getElement().getStyle()
+                                .set("font-size", "20px");
 
-    private Button createDbButton(DbRepository dbRepository) {
-        Dialog dialog = new Dialog();
-        dialog.setHeaderTitle("New entity");
+                        Div wrapper = new Div(editButton);
+                        wrapper.getStyle()
+                                .set("display", "flex")
+                                .set("justify-content", "center")
+                                .set("align-items", "center")
+                                .set("height", "100%");
 
-        VerticalLayout dialogLayout = new VerticalLayout();
-        dialog.add(dialogLayout);
+                        return wrapper;
+                    })
+                    .setHeader("Редактировать")
+                    .setWidth("10%")
+                    .setFlexGrow(0);
 
-        TextField ipField = new TextField("IP");
-        ipField.setHelperText("172.27.201.x");
-        TextField nameField = new TextField("Name");
-        TextField mscSocketField = new TextField("MSC socket");
-        mscSocketField.setHelperText("172.16.x.x");
-        TextField asterSocketField = new TextField("Asterisk socket");
-        asterSocketField.setHelperText("172.27.201.x");
-        TextField loginField = new TextField("Login");
-        TextField passwordField = new TextField("Password");
+            dbEntityGrid.addComponentColumn(dbEntity -> {
+                        Button deleteButton = deleteDbButton(dbRepository, dbEntity);
+                        deleteButton.addThemeVariants(ButtonVariant.LUMO_ERROR);
+                        deleteButton.getElement().getStyle()
+                                .set("font-size", "20px");
 
-        dialogLayout.add(ipField, nameField, mscSocketField, asterSocketField, loginField, passwordField);
+                        Div wrapper = new Div(deleteButton);
+                        wrapper.getStyle()
+                                .set("display", "flex")
+                                .set("justify-content", "center")
+                                .set("align-items", "center")
+                                .set("height", "100%");
 
-        Button saveButton = new Button("Сохранить", e -> {
-            String ip = ipField.isEmpty() ? null : ipField.getValue();
-            if (ip == null) {
-                Notification.show("Ошибка: IP не может быть пустым", 5000, Notification.Position.BOTTOM_END)
-                        .addThemeVariants(NotificationVariant.LUMO_ERROR);
-                return;
-            }
+                        return wrapper;
+                    })
+                    .setHeader("Удалить")
+                    .setWidth("10%")
+                    .setFlexGrow(0);
 
-            try {
-                createDb(
-                        dbRepository,
-                        ip,
-                        nameField.getValue(),
-                        mscSocketField.getValue(),
-                        asterSocketField.getValue(),
-                        loginField.getValue(),
-                        passwordField.getValue()
-                );
-                Notification.show("Запись успешно создана", 5000, Notification.Position.BOTTOM_END)
+            dbEntityGrid.addThemeVariants(GridVariant.LUMO_COLUMN_BORDERS);
+            dbEntityGrid.addThemeVariants(GridVariant.LUMO_ROW_STRIPES);
+        }
+
+        private TextField getFilterField () {
+            TextField filterField = new TextField();
+            filterField.setPlaceholder("Поиск...");
+            filterField.setPrefixComponent(new Icon("lumo", "search"));
+            filterField.setClearButtonVisible(true);
+            filterField.setWidth("300px");
+            filterField.addValueChangeListener(e ->
+                    dataProvider.setFilter(db -> {
+                        String value = e.getValue().toLowerCase();
+                        return (db.getName() != null && db.getName().toLowerCase().contains(value))
+                                || (db.getIp() != null && db.getIp().toLowerCase().contains(value));
+                    }));
+            return filterField;
+        }
+
+        private Button createDbButton (DbRepository dbRepository){
+            Dialog dialog = new Dialog();
+            dialog.setHeaderTitle("New entity");
+
+            VerticalLayout dialogLayout = new VerticalLayout();
+            dialog.add(dialogLayout);
+
+            TextField ipField = new TextField("IP");
+            ipField.setHelperText("172.27.201.x");
+            TextField nameField = new TextField("Name");
+            TextField mscSocketField = new TextField("MSC socket");
+            mscSocketField.setHelperText("172.16.x.x");
+            TextField asterSocketField = new TextField("Asterisk socket");
+            asterSocketField.setHelperText("172.27.201.x");
+            TextField loginField = new TextField("Login");
+            TextField passwordField = new TextField("Password");
+
+            dialogLayout.add(ipField, nameField, mscSocketField, asterSocketField, loginField, passwordField);
+
+            Button saveButton = new Button("Сохранить", e -> {
+                String ip = ipField.isEmpty() ? null : ipField.getValue();
+                if (ip == null) {
+                    Notification.show("Ошибка: IP не может быть пустым", 5000, Notification.Position.BOTTOM_END)
+                            .addThemeVariants(NotificationVariant.LUMO_ERROR);
+                    return;
+                }
+
+                try {
+                    createDb(
+                            dbRepository,
+                            ip,
+                            nameField.getValue(),
+                            mscSocketField.getValue(),
+                            asterSocketField.getValue(),
+                            loginField.getValue(),
+                            passwordField.getValue()
+                    );
+                    Notification.show("Запись успешно создана", 5000, Notification.Position.BOTTOM_END)
+                            .addThemeVariants(NotificationVariant.LUMO_SUCCESS);
+                } catch (NumberFormatException exception) {
+                    Notification.show(exception.toString(), 5000, Notification.Position.BOTTOM_END)
+                            .addThemeVariants(NotificationVariant.LUMO_ERROR);
+                }
+                refreshGrid();
+            });
+            saveButton.addThemeVariants(ButtonVariant.LUMO_PRIMARY);
+            Button cancelButton = new Button("Отмена", e -> {
+                ipField.clear();
+                nameField.clear();
+                mscSocketField.clear();
+                asterSocketField.clear();
+                dialog.close();
+            });
+            cancelButton.addThemeVariants(ButtonVariant.LUMO_ERROR);
+            dialog.getFooter().add(saveButton, cancelButton);
+
+            Button addBdButton = new Button("Добавить", e -> {
+                ipField.clear();
+                nameField.clear();
+                mscSocketField.clear();
+                asterSocketField.clear();
+                dialog.open();
+            });
+            addBdButton.addThemeVariants(ButtonVariant.LUMO_PRIMARY);
+
+            add(dialog);
+
+            return addBdButton;
+        }
+
+        private Button editDbButton (DbRepository dbRepository, DbEntity db){
+            Dialog dialog = new Dialog();
+            dialog.setHeaderTitle("Edit entity");
+
+            VerticalLayout dialogLayout = new VerticalLayout();
+            dialog.add(dialogLayout);
+
+            TextField ipField = new TextField("IP");
+            ipField.setHelperText("172.27.201.x");
+            TextField nameField = new TextField("Name");
+            TextField mscSocketField = new TextField("MSC socket");
+            mscSocketField.setHelperText("172.16.x.x");
+            TextField asterSocketField = new TextField("Asterisk socket");
+            asterSocketField.setHelperText("172.27.201.x");
+            TextField loginField = new TextField("Login");
+            TextField passwordField = new TextField("Password");
+
+            ipField.setValue(db.getIp() == null ? "" : db.getIp());
+            nameField.setValue(db.getName() == null ? "" : db.getName());
+            mscSocketField.setValue(db.getMscSocket() == null ? "" : db.getMscSocket());
+            asterSocketField.setValue(db.getAsteriskSocket() == null ? "" : db.getAsteriskSocket());
+            loginField.setValue(db.getLogin() == null ? "" : db.getLogin());
+            passwordField.setValue(db.getPassword() == null ? "" : db.getPassword());
+
+            dialogLayout.add(ipField, nameField, mscSocketField, asterSocketField, loginField, passwordField);
+
+            Button saveButton = new Button("Сохранить", e -> {
+                String ip = ipField.isEmpty() ? null : ipField.getValue();
+                if (ip == null) {
+                    Notification.show("Ошибка: IP не может быть пустым", 5000, Notification.Position.BOTTOM_END)
+                            .addThemeVariants(NotificationVariant.LUMO_ERROR);
+                    return;
+                }
+
+                try {
+                    editDb(
+                            dbRepository,
+                            db.getId(),
+                            ip,
+                            nameField.getValue(),
+                            mscSocketField.getValue(),
+                            asterSocketField.getValue(),
+                            loginField.getValue(),
+                            passwordField.getValue()
+                    );
+
+                    Notification.show("Запись успешно изменена", 5000, Notification.Position.BOTTOM_END)
+                            .addThemeVariants(NotificationVariant.LUMO_SUCCESS);
+                } catch (NotFoundException | NumberFormatException exception) {
+                    Notification.show(exception.toString(), 5000, Notification.Position.BOTTOM_END)
+                            .addThemeVariants(NotificationVariant.LUMO_ERROR);
+                }
+                refreshGrid();
+                dialog.close();
+            });
+            saveButton.addThemeVariants(ButtonVariant.LUMO_PRIMARY);
+            Button cancelButton = new Button("Отмена", e -> dialog.close());
+            cancelButton.addThemeVariants(ButtonVariant.LUMO_ERROR);
+            dialog.getFooter().add(saveButton, cancelButton);
+
+            Button editHostButton = new Button("✏\uFE0F", e -> {
+                dialog.open();
+            });
+
+            add(dialog);
+
+            return editHostButton;
+        }
+
+        private Button deleteDbButton (DbRepository dbRepository, DbEntity db){
+            Dialog dialog = new Dialog();
+            dialog.setHeaderTitle("Delete entity");
+
+            VerticalLayout dialogLayout = new VerticalLayout();
+            dialog.add(dialogLayout);
+
+            Text text = new Text("Подтвердите удаление маршрута");
+
+            dialogLayout.add(text);
+
+            Button deleteButton = new Button("Удалить", e -> {
+                deleteDb(dbRepository, db.getId());
+                refreshGrid();
+                dialog.close();
+                Notification.show("Запись успешно удалена", 5000, Notification.Position.BOTTOM_END)
                         .addThemeVariants(NotificationVariant.LUMO_SUCCESS);
-            } catch (NumberFormatException exception) {
-                Notification.show(exception.toString(), 5000, Notification.Position.BOTTOM_END)
-                        .addThemeVariants(NotificationVariant.LUMO_ERROR);
-            }
-            refreshGrid();
-        });
-        saveButton.addThemeVariants(ButtonVariant.LUMO_PRIMARY);
-        Button cancelButton = new Button("Отмена", e -> {
-            ipField.clear();
-            nameField.clear();
-            mscSocketField.clear();
-            asterSocketField.clear();
-            dialog.close();
-        });
-        cancelButton.addThemeVariants(ButtonVariant.LUMO_ERROR);
-        dialog.getFooter().add(saveButton, cancelButton);
+            });
+            deleteButton.addThemeVariants(ButtonVariant.LUMO_PRIMARY, ButtonVariant.LUMO_ERROR);
+            Button cancelButton = new Button("Отмена", e -> dialog.close());
+            cancelButton.addThemeVariants(ButtonVariant.LUMO_ERROR);
+            dialog.getFooter().add(deleteButton, cancelButton);
 
-        Button addBdButton = new Button("Добавить", e -> {
-            ipField.clear();
-            nameField.clear();
-            mscSocketField.clear();
-            asterSocketField.clear();
-            dialog.open();
-        });
-        addBdButton.addThemeVariants(ButtonVariant.LUMO_PRIMARY);
+            Button deleteDbButton = new Button("❌", e -> {
+                dialog.open();
+            });
 
-        add(dialog);
+            add(dialog);
 
-        return addBdButton;
+            return deleteDbButton;
+        }
+
+        private void refreshGrid () {
+            List<DbEntity> updatedItems = dbRepository.findAll(Sort.by("id"));
+            dataProvider.getItems().clear();
+            dataProvider.getItems().addAll(updatedItems);
+            dataProvider.refreshAll();
+        }
     }
-
-    private Button editDbButton(DbRepository dbRepository, DbEntity db) {
-        Dialog dialog = new Dialog();
-        dialog.setHeaderTitle("Edit entity");
-
-        VerticalLayout dialogLayout = new VerticalLayout();
-        dialog.add(dialogLayout);
-
-        TextField ipField = new TextField("IP");
-        ipField.setHelperText("172.27.201.x");
-        TextField nameField = new TextField("Name");
-        TextField mscSocketField = new TextField("MSC socket");
-        mscSocketField.setHelperText("172.16.x.x");
-        TextField asterSocketField = new TextField("Asterisk socket");
-        asterSocketField.setHelperText("172.27.201.x");
-        TextField loginField = new TextField("Login");
-        TextField passwordField = new TextField("Password");
-
-        ipField.setValue(db.getIp() == null ? "" : db.getIp());
-        nameField.setValue(db.getName() == null ? "" : db.getName());
-        mscSocketField.setValue(db.getMscSocket() == null ? "" : db.getMscSocket());
-        asterSocketField.setValue(db.getAsteriskSocket() == null ? "" : db.getAsteriskSocket());
-        loginField.setValue(db.getLogin() == null ? "" : db.getLogin());
-        passwordField.setValue(db.getPassword() == null ? "" : db.getPassword());
-
-        dialogLayout.add(ipField, nameField, mscSocketField, asterSocketField, loginField, passwordField);
-
-        Button saveButton = new Button("Сохранить", e -> {
-            String ip = ipField.isEmpty() ? null : ipField.getValue();
-            if (ip == null) {
-                Notification.show("Ошибка: IP не может быть пустым", 5000, Notification.Position.BOTTOM_END)
-                        .addThemeVariants(NotificationVariant.LUMO_ERROR);
-                return;
-            }
-
-            try {
-                editDb(
-                        dbRepository,
-                        db.getId(),
-                        ip,
-                        nameField.getValue(),
-                        mscSocketField.getValue(),
-                        asterSocketField.getValue(),
-                        loginField.getValue(),
-                        passwordField.getValue()
-                );
-
-                Notification.show("Запись успешно изменена", 5000, Notification.Position.BOTTOM_END)
-                        .addThemeVariants(NotificationVariant.LUMO_SUCCESS);
-            } catch (NotFoundException | NumberFormatException exception) {
-                Notification.show(exception.toString(), 5000, Notification.Position.BOTTOM_END)
-                        .addThemeVariants(NotificationVariant.LUMO_ERROR);
-            }
-            refreshGrid();
-            dialog.close();
-        });
-        saveButton.addThemeVariants(ButtonVariant.LUMO_PRIMARY);
-        Button cancelButton = new Button("Отмена", e -> dialog.close());
-        cancelButton.addThemeVariants(ButtonVariant.LUMO_ERROR);
-        dialog.getFooter().add(saveButton, cancelButton);
-
-        Button editHostButton = new Button("✏\uFE0F", e -> {
-            dialog.open();
-        });
-
-        add(dialog);
-
-        return editHostButton;
-    }
-
-    private Button deleteDbButton(DbRepository dbRepository, DbEntity db) {
-        Dialog dialog = new Dialog();
-        dialog.setHeaderTitle("Delete entity");
-
-        VerticalLayout dialogLayout = new VerticalLayout();
-        dialog.add(dialogLayout);
-
-        Text text = new Text("Подтвердите удаление маршрута");
-
-        dialogLayout.add(text);
-
-        Button deleteButton = new Button("Удалить", e -> {
-            deleteDb(dbRepository, db.getId());
-            refreshGrid();
-            dialog.close();
-            Notification.show("Запись успешно удалена", 5000, Notification.Position.BOTTOM_END)
-                    .addThemeVariants(NotificationVariant.LUMO_SUCCESS);
-        });
-        deleteButton.addThemeVariants(ButtonVariant.LUMO_PRIMARY, ButtonVariant.LUMO_ERROR);
-        Button cancelButton = new Button("Отмена", e -> dialog.close());
-        cancelButton.addThemeVariants(ButtonVariant.LUMO_ERROR);
-        dialog.getFooter().add(deleteButton, cancelButton);
-
-        Button deleteDbButton = new Button("❌", e -> {
-            dialog.open();
-        });
-
-        add(dialog);
-
-        return deleteDbButton;
-    }
-
-    private void refreshGrid() {
-        List<DbEntity> updatedItems = dbRepository.findAll(Sort.by("id"));
-        dataProvider.getItems().clear();
-        dataProvider.getItems().addAll(updatedItems);
-        dataProvider.refreshAll();
-    }
-}

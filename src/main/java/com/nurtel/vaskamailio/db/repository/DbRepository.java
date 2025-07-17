@@ -13,4 +13,6 @@ public interface DbRepository extends JpaRepository<DbEntity, Long> {
     List<DbEntity> findAllByOrderByIdAsc();
 
     Optional<DbEntity> findByName(String selectedDb);
+
+    Optional<DbEntity> findByIp(String ip);
 }
