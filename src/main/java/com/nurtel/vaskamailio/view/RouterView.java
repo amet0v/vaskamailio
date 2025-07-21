@@ -1,7 +1,6 @@
 package com.nurtel.vaskamailio.view;
 
 import com.nurtel.vaskamailio.db.config.DatabaseContextHolder;
-import com.nurtel.vaskamailio.dispatcher.entity.DispatcherEntity;
 import com.nurtel.vaskamailio.router.entity.RouterEntity;
 import com.nurtel.vaskamailio.router.repository.RouterRepository;
 import com.vaadin.flow.component.Text;
@@ -19,13 +18,13 @@ import com.vaadin.flow.component.orderedlayout.HorizontalLayout;
 import com.vaadin.flow.component.orderedlayout.VerticalLayout;
 import com.vaadin.flow.component.textfield.IntegerField;
 import com.vaadin.flow.component.textfield.TextField;
-import com.vaadin.flow.data.provider.ListDataProvider;
+import com.vaadin.flow.data.provider.CallbackDataProvider;
+import com.vaadin.flow.data.provider.DataProvider;
 import com.vaadin.flow.router.PageTitle;
 import com.vaadin.flow.router.Route;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Sort;
 
-import java.util.ArrayList;
-import java.util.List;
 import java.util.Optional;
 
 import static com.nurtel.vaskamailio.router.service.RouterService.*;
@@ -34,8 +33,9 @@ import static com.nurtel.vaskamailio.router.service.RouterService.*;
 @PageTitle("Kamailio | Router")
 public class RouterView extends VerticalLayout {
     private final RouterRepository routerRepository;
-    private ListDataProvider<RouterEntity> dataProvider = new ListDataProvider<>(new ArrayList<>());
-    private Grid<DispatcherEntity> dispatcherEntityGrid;
+    private CallbackDataProvider<RouterEntity, String> dataProvider;
+    private Grid<RouterEntity> routerEntityGrid;
+    private String currentFilter = "";
     public static Button addButton = new Button();
 
     public RouterView(RouterRepository routerRepository) {
@@ -48,14 +48,31 @@ public class RouterView extends VerticalLayout {
             return;
         }
 
-        Grid<RouterEntity> routerEntityGrid = new Grid<>(RouterEntity.class, false);
+        routerEntityGrid = new Grid<>(RouterEntity.class, false);
         routerEntityGrid.getStyle().set("height", "80vh");
 
         addButton = createRouteButton(routerRepository);
 
         setupDbContext();
-        List<RouterEntity> items = routerRepository.findAll(Sort.by("id"));
-        dataProvider = new ListDataProvider<>(items);
+        dataProvider = DataProvider.fromFilteringCallbacks(
+                query -> {
+                    int offset = query.getOffset();
+                    int limit = query.getLimit();
+                    String filter = currentFilter == null ? "" : currentFilter;
+
+                    return routerRepository
+                            .findByDidContainingIgnoreCaseOrDescriptionContainingIgnoreCase(
+                                    filter, filter,
+                                    PageRequest.of(offset / limit, limit, Sort.by("id"))
+                            )
+                            .stream();
+                },
+                query -> {
+                    String filter = currentFilter == null ? "" : currentFilter;
+                    return routerRepository.countByDidContainingIgnoreCaseOrDescriptionContainingIgnoreCase(filter, filter);
+                }
+        );
+
         routerEntityGrid.setDataProvider(dataProvider);
 
         TextField filterField = getFilterField();
@@ -148,8 +165,6 @@ public class RouterView extends VerticalLayout {
                 .setWidth("10%")
                 .setFlexGrow(0);
 
-//        routerEntityGrid.setItems(routerRepository.findAll(Sort.by("id")));
-
         routerEntityGrid.addThemeVariants(GridVariant.LUMO_COLUMN_BORDERS);
         routerEntityGrid.addThemeVariants(GridVariant.LUMO_ROW_STRIPES);
     }
@@ -160,14 +175,19 @@ public class RouterView extends VerticalLayout {
         filterField.setPrefixComponent(new Icon("lumo", "search"));
         filterField.setClearButtonVisible(true);
         filterField.setWidth("300px");
-        filterField.addValueChangeListener(e ->
-                dataProvider.setFilter(router -> {
-                    String value = e.getValue().toLowerCase();
-                    return (router.getDid() != null && router.getDid().toLowerCase().contains(value))
-                            || (router.getDescription() != null && router.getDescription().toLowerCase().contains(value));
-                }));
+
+        filterField.addValueChangeListener(e -> {
+            applyFilter(e.getValue());
+        });
+
         return filterField;
     }
+
+    private void applyFilter(String filterText) {
+        this.currentFilter = filterText == null ? "" : filterText.trim();
+        dataProvider.refreshAll();
+    }
+
 
     private Button createRouteButton(RouterRepository routerRepository) {
         Dialog dialog = new Dialog();
@@ -339,9 +359,9 @@ public class RouterView extends VerticalLayout {
     }
 
     private void refreshGrid() {
-        List<RouterEntity> updatedItems = routerRepository.findAll(Sort.by("id"));
-        dataProvider.getItems().clear();
-        dataProvider.getItems().addAll(updatedItems);
+//        List<RouterEntity> updatedItems = routerRepository.findAll(Sort.by("id"));
+//        dataProvider.getItems().clear();
+//        dataProvider.getItems().addAll(updatedItems);
         dataProvider.refreshAll();
     }
 }
