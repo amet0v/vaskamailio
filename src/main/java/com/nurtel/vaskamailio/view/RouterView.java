@@ -185,6 +185,7 @@ public class RouterView extends VerticalLayout {
 
     private void applyFilter(String filterText) {
         this.currentFilter = filterText == null ? "" : filterText.trim();
+        setupDbContext();
         dataProvider.refreshAll();
     }
 
