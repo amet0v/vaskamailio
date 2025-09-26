@@ -21,7 +21,7 @@ import java.util.Map;
 @Configuration
 public class DataSourceConfig {
 
-    @Value("${spring.datasource.url0}")
+    @Value("${spring.datasource.url}")
     private String url0;
 
     @Value("${spring.datasource.username}")

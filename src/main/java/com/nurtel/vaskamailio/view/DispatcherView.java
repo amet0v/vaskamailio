@@ -36,15 +36,6 @@ import static com.nurtel.vaskamailio.host.service.HostService.*;
 @Route(value = "/dispatcher", layout = MainLayout.class)
 @PageTitle("Kamailio | Dispatcher")
 public class DispatcherView extends VerticalLayout {
-    @Value("${kamailio.default.socket1}")
-    private String socket1;
-
-    @Value("${kamailio.default.socket2}")
-    private String socket2;
-
-    @Value("${kamailio.default.socket3}")
-    private String socket3;
-
     private final DispatcherRepository dispatcherRepository;
     private final HostRepository hostRepository;
     private ListDataProvider<DispatcherEntity> dataProvider = new ListDataProvider<>(new ArrayList<>());
@@ -257,13 +248,7 @@ public class DispatcherView extends VerticalLayout {
 
             String selectedDb = getSelectedDb().get();
             System.out.println(selectedDb);
-            String socketValue = switch (selectedDb) {
-                case "kamailio01" -> socket1;
-                case "kamailio02" -> socket2;
-                case "kamailio03" -> socket3;
-                default -> "";
-            };
-            attrsField.setValue(socketValue);
+            attrsField.setValue("socket=udp:172.27.x.x:5060");
 
             dialog.open();
         });

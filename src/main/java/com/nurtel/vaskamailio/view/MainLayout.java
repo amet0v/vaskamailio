@@ -272,6 +272,10 @@ public class MainLayout extends AppLayout {
         routerDidIcon.setColor("#b8c7ce");
         SideNavItem routerDidItem = new SideNavItem("Router", RouterView.class, routerDidIcon);
 
+        Icon prefixIcon = VaadinIcon.ARROW_BACKWARD.create();
+        prefixIcon.setColor("#b8c7ce");
+        SideNavItem prefixItem = new SideNavItem("Prefixes", PrefixView.class, prefixIcon);
+
         Icon dispatcherIcon = VaadinIcon.SCALE.create();
         dispatcherIcon.setColor("#b8c7ce");
         SideNavItem dispatcherItem = new SideNavItem("Dispatcher", DispatcherView.class, dispatcherIcon);
@@ -288,7 +292,7 @@ public class MainLayout extends AppLayout {
         dbIcon.setColor("#b8c7ce");
         SideNavItem dbItem = new SideNavItem("Базы данных", DbView.class, dbIcon);
 
-        List<SideNavItem> sideNavItems = List.of(routerDidItem, dispatcherItem, hostsItem, managementItem, dbItem);
+        List<SideNavItem> sideNavItems = List.of(routerDidItem, prefixItem, dispatcherItem, hostsItem, managementItem, dbItem);
 
         for (SideNavItem item : sideNavItems) {
             item.getStyle()
