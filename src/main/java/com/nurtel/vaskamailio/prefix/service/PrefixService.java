@@ -11,12 +11,14 @@ public class PrefixService {
             String regex,
             Integer setid,
             Boolean strip,
+            Integer stripChars,
             String description
     ) {
         PrefixEntity prefix = PrefixEntity.builder()
                 .regex(regex)
                 .setid(setid)
                 .strip(strip)
+                .stripChars(stripChars)
                 .description(description)
                 .build();
 
@@ -30,6 +32,7 @@ public class PrefixService {
             String regex,
             Integer setid,
             Boolean strip,
+            Integer stripChars,
             String description
     ) {
         Optional<PrefixEntity> optionalPrefix = prefixRepository.findById(id);
@@ -39,6 +42,7 @@ public class PrefixService {
         prefix.setRegex(regex);
         prefix.setSetid(setid);
         prefix.setStrip(strip);
+        prefix.setStripChars(stripChars);
         prefix.setDescription(description);
 
         prefix = prefixRepository.save(prefix);

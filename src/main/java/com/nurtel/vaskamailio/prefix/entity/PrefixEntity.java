@@ -24,6 +24,9 @@ public class PrefixEntity {
     @Column(name = "strip")
     private Boolean strip = false;
 
+    @Column(name = "strip_chars")
+    private Integer stripChars;
+
     @Column(name = "description")
     private String description;
 }

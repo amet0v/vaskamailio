@@ -103,6 +103,11 @@ public class PrefixView extends VerticalLayout {
                 .setSortable(true)
                 .setResizable(true);
 
+        prefixEntityGrid.addColumn(PrefixEntity::getStripChars)
+                .setHeader("Кол-во символов")
+                .setSortable(true)
+                .setResizable(true);
+
         prefixEntityGrid.addColumn(PrefixEntity::getDescription)
                 .setHeader("Описание")
                 .setSortable(true)
@@ -149,6 +154,7 @@ public class PrefixView extends VerticalLayout {
         prefixEntityGrid.addThemeVariants(GridVariant.LUMO_COLUMN_BORDERS);
         prefixEntityGrid.addThemeVariants(GridVariant.LUMO_ROW_STRIPES);
     }
+
     private TextField getFilterField() {
         TextField filterField = new TextField();
         filterField.setPlaceholder("Поиск...");
@@ -174,11 +180,18 @@ public class PrefixView extends VerticalLayout {
         TextField regexField = new TextField("Prefix regex");
         IntegerField setidField = new IntegerField("SetID");
         Checkbox stripCheckbox = new Checkbox("Убрать префикс?", false);
-        TextField descriptionField = new TextField("Description");
+        IntegerField stripCharsField = new IntegerField("Кол-во символов");
+        TextField descriptionField = new TextField("Описание");
 
+        setidField.setStepButtonsVisible(true);
+        setidField.setValue(0);
+        setidField.setMin(0);
+        stripCharsField.setStepButtonsVisible(true);
+        stripCharsField.setValue(0);
+        stripCharsField.setMin(0);
 //        customizeFields(didField, setidField, descriptionField);
 
-        dialogLayout.add(regexField, setidField, stripCheckbox, descriptionField);
+        dialogLayout.add(regexField, setidField, stripCheckbox, stripCharsField, descriptionField);
 
         Button saveButton = new Button("Сохранить", e -> {
             //можно заменить "" на null и обратно
@@ -193,7 +206,7 @@ public class PrefixView extends VerticalLayout {
 
             try {
                 setupDbContext();
-                createPrefix(prefixRepository, regex, setid, stripCheckbox.getValue(), description);
+                createPrefix(prefixRepository, regex, setid, stripCheckbox.getValue(), stripCharsField.getValue(), description);
                 Notification.show("Запись успешно создана", 5000, Notification.Position.BOTTOM_END)
                         .addThemeVariants(NotificationVariant.LUMO_SUCCESS);
             } catch (NumberFormatException exception) {
@@ -230,8 +243,15 @@ public class PrefixView extends VerticalLayout {
         TextField regexField = new TextField("Prefix regex");
         IntegerField setidField = new IntegerField("SetID");
         Checkbox stripCheckbox = new Checkbox("Убрать префикс?", false);
-        TextField descriptionField = new TextField("Description");
+        IntegerField stripCharsField = new IntegerField("Кол-во символов");
+        TextField descriptionField = new TextField("Описание");
 
+        setidField.setStepButtonsVisible(true);
+        setidField.setValue(0);
+        setidField.setMin(0);
+        stripCharsField.setStepButtonsVisible(true);
+        stripCharsField.setValue(0);
+        stripCharsField.setMin(0);
 //        customizeFields(didField, setidField, descriptionField);
 
         regexField.setValue(prefix.getRegex() == null ? "" : prefix.getRegex());
@@ -239,7 +259,7 @@ public class PrefixView extends VerticalLayout {
         stripCheckbox.setValue(prefix.getStrip());
         descriptionField.setValue(prefix.getDescription() == null ? "" : prefix.getDescription());
 
-        dialogLayout.add(regexField, setidField, stripCheckbox, descriptionField);
+        dialogLayout.add(regexField, setidField, stripCheckbox, stripCharsField, descriptionField);
 
         Button saveButton = new Button("Сохранить", e -> {
             //можно заменить "" на null и обратно
@@ -254,7 +274,7 @@ public class PrefixView extends VerticalLayout {
 
             try {
                 setupDbContext();
-                editPrefix(prefixRepository, prefix.getId(), regex, setid, stripCheckbox.getValue(), description);
+                editPrefix(prefixRepository, prefix.getId(), regex, setid, stripCheckbox.getValue(), stripCharsField.getValue(), description);
 
                 Notification.show("Запись успешно изменена", 5000, Notification.Position.BOTTOM_END)
                         .addThemeVariants(NotificationVariant.LUMO_SUCCESS);
