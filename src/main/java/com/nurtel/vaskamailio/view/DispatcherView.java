@@ -1,6 +1,8 @@
 package com.nurtel.vaskamailio.view;
 
 import com.nurtel.vaskamailio.db.config.DatabaseContextHolder;
+import com.nurtel.vaskamailio.db.entity.DbEntity;
+import com.nurtel.vaskamailio.db.repository.DbRepository;
 import com.nurtel.vaskamailio.dispatcher.entity.DispatcherEntity;
 import com.nurtel.vaskamailio.dispatcher.repository.DispatcherRepository;
 import com.nurtel.vaskamailio.host.entity.HostEntity;
@@ -23,7 +25,6 @@ import com.vaadin.flow.component.textfield.TextField;
 import com.vaadin.flow.data.provider.ListDataProvider;
 import com.vaadin.flow.router.PageTitle;
 import com.vaadin.flow.router.Route;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.domain.Sort;
 
 import java.util.ArrayList;
@@ -38,13 +39,15 @@ import static com.nurtel.vaskamailio.host.service.HostService.*;
 public class DispatcherView extends VerticalLayout {
     private final DispatcherRepository dispatcherRepository;
     private final HostRepository hostRepository;
+    private final DbRepository dbRepository;
     private ListDataProvider<DispatcherEntity> dataProvider = new ListDataProvider<>(new ArrayList<>());
     private Grid<DispatcherEntity> dispatcherEntityGrid;
     public static Button addButton = new Button();
 
-    public DispatcherView(DispatcherRepository dispatcherRepository, HostRepository hostRepository) {
+    public DispatcherView(DispatcherRepository dispatcherRepository, HostRepository hostRepository, DbRepository dbRepository) {
         this.dispatcherRepository = dispatcherRepository;
         this.hostRepository = hostRepository;
+        this.dbRepository = dbRepository;
 
         Boolean isAllow = MainLayout.isAllow();
         if (!isAllow) {
@@ -56,7 +59,7 @@ public class DispatcherView extends VerticalLayout {
         Grid<DispatcherEntity> dispatcherEntityGrid = new Grid<>(DispatcherEntity.class, false);
         dispatcherEntityGrid.getStyle().set("height", "80vh");
 
-        addButton = createDispatcherButton(dispatcherRepository, hostRepository);
+        addButton = createDispatcherButton(dispatcherRepository, hostRepository, dbRepository);
 
         setupDbContext();
         List<DispatcherEntity> items = dispatcherRepository.findAll(Sort.by("id"));
@@ -177,7 +180,7 @@ public class DispatcherView extends VerticalLayout {
         return filterField;
     }
 
-    private Button createDispatcherButton(DispatcherRepository dispatcherRepository, HostRepository hostRepository) {
+    private Button createDispatcherButton(DispatcherRepository dispatcherRepository, HostRepository hostRepository, DbRepository dbRepository) {
         Dialog dialog = new Dialog();
         dialog.setHeaderTitle("New entity");
         dialog.setDraggable(true);
@@ -243,12 +246,16 @@ public class DispatcherView extends VerticalLayout {
         dialog.getFooter().add(saveButton, cancelButton);
 
         Button addRouteButton = new Button("Добавить", e -> {
-            destinationField.clear();
-            descriptionField.clear();
+            //destinationField.clear();
+            //descriptionField.clear();
 
             String selectedDb = getSelectedDb().get();
             System.out.println(selectedDb);
-            attrsField.setValue("socket=udp:172.27.x.x:5060");
+            Optional<DbEntity> db = dbRepository.findByName(selectedDb);
+            if (db.isPresent()){
+                attrsField.setValue("socket=udp:" + db.get().getAsteriskSocket());
+            }
+            else if (attrsField.isEmpty()) attrsField.setValue("socket=udp:172.27.x.x:5060");
 
             dialog.open();
         });

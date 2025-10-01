@@ -222,9 +222,9 @@ public class DbView extends VerticalLayout {
             ipField.setHelperText("172.27.201.x");
             TextField nameField = new TextField("Name");
             TextField mscSocketField = new TextField("MSC socket");
-            mscSocketField.setHelperText("172.16.x.x");
+            mscSocketField.setHelperText("172.16.x.x:5060");
             TextField asterSocketField = new TextField("Asterisk socket");
-            asterSocketField.setHelperText("172.27.201.x");
+            asterSocketField.setHelperText("172.27.201.x:5060");
             TextField loginField = new TextField("Login");
             TextField passwordField = new TextField("Password");
 
@@ -292,9 +292,9 @@ public class DbView extends VerticalLayout {
             ipField.setHelperText("172.27.201.x");
             TextField nameField = new TextField("Name");
             TextField mscSocketField = new TextField("MSC socket");
-            mscSocketField.setHelperText("172.16.x.x");
+            mscSocketField.setHelperText("172.16.x.x:5060");
             TextField asterSocketField = new TextField("Asterisk socket");
-            asterSocketField.setHelperText("172.27.201.x");
+            asterSocketField.setHelperText("172.27.201.x:5060");
             TextField loginField = new TextField("Login");
             TextField passwordField = new TextField("Password");
 

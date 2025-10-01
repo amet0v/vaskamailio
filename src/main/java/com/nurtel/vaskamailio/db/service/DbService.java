@@ -110,8 +110,8 @@ public class DbService {
         List<DispatcherEntity> dispatcherEntityList = dispatcherRepository.findAll();
         for (DispatcherEntity dispatcherEntity : dispatcherEntityList) {
             if (dispatcherEntity.getDescription().contains("MSC"))
-                dispatcherEntity.setAttrs("socket=udp:" + db.getMscSocket() + ":5060");
-            else dispatcherEntity.setAttrs("socket=udp:" + db.getAsteriskSocket() + ":5060");
+                dispatcherEntity.setAttrs("socket=udp:" + db.getMscSocket());
+            else dispatcherEntity.setAttrs("socket=udp:" + db.getAsteriskSocket());
             dispatcherRepository.save(dispatcherEntity);
         }
         return "Аттрибуты dispatcher на сервере " + db.getName() + "успешно изменены";
