@@ -257,6 +257,7 @@ public class PrefixView extends VerticalLayout {
         regexField.setValue(prefix.getRegex() == null ? "" : prefix.getRegex());
         setidField.setValue(prefix.getSetid() == null ? 0 : prefix.getSetid());
         stripCheckbox.setValue(prefix.getStrip());
+        stripCharsField.setValue(prefix.getStripChars() == null ? 0 : prefix.getStripChars());
         descriptionField.setValue(prefix.getDescription() == null ? "" : prefix.getDescription());
 
         dialogLayout.add(regexField, setidField, stripCheckbox, stripCharsField, descriptionField);
