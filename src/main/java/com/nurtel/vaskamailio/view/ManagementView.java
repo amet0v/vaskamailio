@@ -74,6 +74,8 @@ public class ManagementView extends VerticalLayout {
                 e -> runCommandOn(db.getIp(), "sudo /usr/sbin/kamcmd htable.reload routes")));
         hl.add(new Button("Reload hosts", VaadinIcon.REFRESH.create(),
                 e -> runCommandOn(db.getIp(), "sudo /usr/sbin/kamcmd htable.reload hosts")));
+        hl.add(new Button("Reload dispatcher", VaadinIcon.REFRESH.create(),
+                e -> runCommandOn(db.getIp(), "sudo /usr/sbin/kamcmd dispatcher.reload")));
 
         Button restartBtn = new Button("Restart kamailio", VaadinIcon.POWER_OFF.create(), e -> {
             Dialog dialog = new Dialog();
