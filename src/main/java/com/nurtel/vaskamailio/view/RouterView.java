@@ -1,6 +1,8 @@
 package com.nurtel.vaskamailio.view;
 
 import com.nurtel.vaskamailio.db.config.DatabaseContextHolder;
+import com.nurtel.vaskamailio.dispatcher.entity.DispatcherEntity;
+import com.nurtel.vaskamailio.dispatcher.repository.DispatcherRepository;
 import com.nurtel.vaskamailio.router.entity.RouterEntity;
 import com.nurtel.vaskamailio.router.repository.RouterRepository;
 import com.vaadin.flow.component.Text;
@@ -25,7 +27,9 @@ import com.vaadin.flow.router.Route;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Sort;
 
+import java.util.Map;
 import java.util.Optional;
+import java.util.stream.Collectors;
 
 import static com.nurtel.vaskamailio.router.service.RouterService.*;
 
@@ -38,15 +42,22 @@ public class RouterView extends VerticalLayout {
     private String currentFilter = "";
     public static Button addButton = new Button();
 
-    public RouterView(RouterRepository routerRepository) {
+    public RouterView(RouterRepository routerRepository, DispatcherRepository dispatcherRepository) {
         this.routerRepository = routerRepository;
 
         Boolean isAllow = MainLayout.isAllow();
-        if (!isAllow){
+        if (!isAllow) {
             Text notAllowedText = new Text("Просмотр страницы недоступен");
             add(notAllowedText);
             return;
         }
+
+        Map<Integer, String> setidToDescription = dispatcherRepository.findAll().stream()
+                .collect(Collectors.toMap(
+                        DispatcherEntity::getSetid,
+                        DispatcherEntity::getDescription,
+                        (a, b) -> a
+                ));
 
         routerEntityGrid = new Grid<>(RouterEntity.class, false);
         routerEntityGrid.getStyle().set("height", "80vh");
@@ -115,7 +126,12 @@ public class RouterView extends VerticalLayout {
 //                .setSortable(true)
 //                .setResizable(true);
 
-        routerEntityGrid.addColumn(RouterEntity::getSetid)
+        routerEntityGrid.addColumn(e -> {
+                    String desc = setidToDescription.get(Integer.valueOf(e.getSetid()));
+                    return desc == null
+                            ? String.valueOf(e.getSetid())
+                            : desc + " (" + e.getSetid() + ")";
+                })
                 .setHeader("SetID")
                 .setWidth("20%")
                 .setFlexGrow(0)

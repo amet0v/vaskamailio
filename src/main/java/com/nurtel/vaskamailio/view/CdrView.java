@@ -3,6 +3,8 @@ package com.nurtel.vaskamailio.view;
 import com.nurtel.vaskamailio.cdr.entity.CdrEntity;
 import com.nurtel.vaskamailio.cdr.repository.CdrRepository;
 import com.nurtel.vaskamailio.db.config.DatabaseContextHolder;
+import com.nurtel.vaskamailio.dispatcher.entity.DispatcherEntity;
+import com.nurtel.vaskamailio.dispatcher.repository.DispatcherRepository;
 import com.vaadin.flow.component.Text;
 import com.vaadin.flow.component.UI;
 import com.vaadin.flow.component.button.Button;
@@ -22,12 +24,14 @@ import com.vaadin.flow.router.Route;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Locale;
+import java.util.Map;
 import java.util.Optional;
+import java.util.stream.Collectors;
 
 @Route(value = "/cdr", layout = MainLayout.class)
 @PageTitle("Kamailio | CDR")
 public class CdrView extends VerticalLayout {
-    public CdrView(CdrRepository cdrRepository) {
+    public CdrView(CdrRepository cdrRepository, DispatcherRepository dispatcherRepository) {
         Boolean isAllow = MainLayout.isAllow();
         if (!isAllow) {
             Text notAllowedText = new Text("Просмотр страницы недоступен");
@@ -35,20 +39,39 @@ public class CdrView extends VerticalLayout {
             return;
         }
 
+        Map<Integer, String> setidToDescription = dispatcherRepository.findAll().stream()
+                .collect(Collectors.toMap(
+                        DispatcherEntity::getSetid,
+                        DispatcherEntity::getDescription,
+                        (a, b) -> a
+                ));
+
+        Map<String, String> sourceToDescription = dispatcherRepository.findAll().stream()
+                .collect(Collectors.toMap(
+                        DispatcherEntity::getDestination,
+                        DispatcherEntity::getDescription,
+                        (a, b) -> a
+                ));
+
         Grid<CdrEntity> cdrGrid = new Grid<>(CdrEntity.class, false);
         cdrGrid.setHeight("70vh");
 
-        cdrGrid.addColumn(CdrEntity::getId)
-                .setHeader("ID")
-                .setSortable(true)
-                .setResizable(true);
+//        cdrGrid.addColumn(CdrEntity::getId)
+//                .setHeader("ID")
+//                .setSortable(true)
+//                .setResizable(true);
 
         cdrGrid.addColumn(CdrEntity::getCallTime)
                 .setHeader("Call Time")
                 .setSortable(true)
                 .setResizable(true);
 
-        cdrGrid.addColumn(CdrEntity::getSource)
+        cdrGrid.addColumn(cdr -> {
+                    String desc = sourceToDescription.get("sip:" + cdr.getSource());
+                    return desc == null
+                            ? String.valueOf(cdr.getSource())
+                            :  desc + " (" + cdr.getSource() + ")";
+                })
                 .setHeader("Source")
                 .setSortable(true)
                 .setResizable(true);
@@ -63,7 +86,12 @@ public class CdrView extends VerticalLayout {
                 .setSortable(true)
                 .setResizable(true);
 
-        cdrGrid.addColumn(CdrEntity::getSetid)
+        cdrGrid.addColumn(cdr -> {
+                    String desc = setidToDescription.get(cdr.getSetid());
+                    return desc == null
+                            ? String.valueOf(cdr.getSetid())
+                            :  desc + " (" + cdr.getSetid() + ")";
+                })
                 .setHeader("SetID")
                 .setSortable(true)
                 .setResizable(true);
