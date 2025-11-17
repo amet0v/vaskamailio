@@ -2,6 +2,7 @@ package com.nurtel.vaskamailio.view;
 
 import com.nurtel.vaskamailio.db.config.DatabaseContextHolder;
 import com.nurtel.vaskamailio.dispatcher.entity.DispatcherEntity;
+import com.nurtel.vaskamailio.dispatcher.repository.DispatcherRepository;
 import com.nurtel.vaskamailio.prefix.entity.PrefixEntity;
 import com.nurtel.vaskamailio.prefix.repository.PrefixRepository;
 import com.vaadin.flow.component.Text;
@@ -25,22 +26,20 @@ import com.vaadin.flow.router.PageTitle;
 import com.vaadin.flow.router.Route;
 import org.springframework.data.domain.Sort;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Objects;
-import java.util.Optional;
+import java.util.*;
+import java.util.stream.Collectors;
 
 import static com.nurtel.vaskamailio.prefix.service.PrefixService.*;
 
-@Route(value = "/prefixes", layout = MainLayout.class)
-@PageTitle("Kamailio | Prefixes")
+@Route(value = "/regex", layout = MainLayout.class)
+@PageTitle("Kamailio | RegEx")
 public class PrefixView extends VerticalLayout {
     private final PrefixRepository prefixRepository;
     private ListDataProvider<PrefixEntity> dataProvider = new ListDataProvider<>(new ArrayList<>());
     private Grid<PrefixEntity> prefixEntityGrid;
     public static Button addButton = new Button();
 
-    public PrefixView(PrefixRepository prefixRepository) {
+    public PrefixView(PrefixRepository prefixRepository, DispatcherRepository dispatcherRepository) {
         this.prefixRepository = prefixRepository;
 
         Boolean isAllow = MainLayout.isAllow();
@@ -49,6 +48,13 @@ public class PrefixView extends VerticalLayout {
             add(notAllowedText);
             return;
         }
+
+        Map<Integer, String> setidToDescription = dispatcherRepository.findAll().stream()
+                .collect(Collectors.toMap(
+                        DispatcherEntity::getSetid,
+                        DispatcherEntity::getDescription,
+                        (a, b) -> a
+                ));
 
         prefixEntityGrid = new Grid<>(PrefixEntity.class, false);
         prefixEntityGrid.getStyle().set("height", "80vh");
@@ -81,16 +87,21 @@ public class PrefixView extends VerticalLayout {
                 .setResizable(true);
 
         prefixEntityGrid.addColumn(PrefixEntity::getRegex)
-                .setHeader("Prefix regex")
+                .setHeader("RegEx")
 //                .setWidth("20%")
 //                .setFlexGrow(0)
                 .setSortable(true)
                 .setResizable(true);
 
-        prefixEntityGrid.addColumn(PrefixEntity::getSetid)
+        prefixEntityGrid.addColumn(e -> {
+                    String desc = setidToDescription.get(e.getSetid());
+                    return desc == null
+                            ? String.valueOf(e.getSetid())
+                            : desc + " (" + e.getSetid() + ")";
+                })
                 .setHeader("SetID")
-//                .setWidth("20%")
-//                .setFlexGrow(0)
+                .setWidth("20%")
+                .setFlexGrow(0)
                 .setSortable(true)
                 .setResizable(true);
 

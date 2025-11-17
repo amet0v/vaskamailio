@@ -274,7 +274,7 @@ public class MainLayout extends AppLayout {
 
         Icon prefixIcon = VaadinIcon.ARROW_BACKWARD.create();
         prefixIcon.setColor("#b8c7ce");
-        SideNavItem prefixItem = new SideNavItem("Prefixes", PrefixView.class, prefixIcon);
+        SideNavItem prefixItem = new SideNavItem("RegEx", PrefixView.class, prefixIcon);
 
         Icon dispatcherIcon = VaadinIcon.SCALE.create();
         dispatcherIcon.setColor("#b8c7ce");
