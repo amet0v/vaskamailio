@@ -24,9 +24,9 @@ import com.vaadin.flow.data.provider.CallbackDataProvider;
 import com.vaadin.flow.data.provider.DataProvider;
 import com.vaadin.flow.router.PageTitle;
 import com.vaadin.flow.router.Route;
-import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Sort;
 
+import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.stream.Collectors;
@@ -65,34 +65,30 @@ public class RouterView extends VerticalLayout {
         addButton = createRouteButton(routerRepository);
 
         setupDbContext();
-        dataProvider = DataProvider.fromFilteringCallbacks(
-                query -> {
-                    int offset = query.getOffset();
-                    int limit = query.getLimit();
-                    String filter = currentFilter == null ? "" : currentFilter;
 
-                    return routerRepository
-                            .findByDidContainingIgnoreCaseOrDescriptionContainingIgnoreCase(
-                                    filter, filter,
-                                    PageRequest.of(offset / limit, limit, Sort.by("id"))
-                            )
-                            .stream();
+        dataProvider = DataProvider.fromFilteringCallbacks(
+                (CallbackDataProvider.FetchCallback<RouterEntity, String>) query -> {
+                    List<RouterEntity> allItems = routerRepository.findAll(Sort.by("id"));
+                    // Пагинация Vaadin Grid
+                    return allItems.stream()
+                            .skip(query.getOffset())
+                            .limit(query.getLimit());
                 },
-                query -> {
-                    String filter = currentFilter == null ? "" : currentFilter;
-                    return routerRepository.countByDidContainingIgnoreCaseOrDescriptionContainingIgnoreCase(filter, filter);
+                (CallbackDataProvider.CountCallback<RouterEntity, String>) query -> {
+                    return (int) routerRepository.count();
                 }
         );
 
+
         routerEntityGrid.setDataProvider(dataProvider);
 
-        TextField filterField = getFilterField();
+        HorizontalLayout filterLayout = getFilterLayout(routerRepository);
 
         HorizontalLayout horizontalLayout = new HorizontalLayout();
         horizontalLayout.setWidthFull();
         horizontalLayout.setJustifyContentMode(JustifyContentMode.BETWEEN);
 
-        horizontalLayout.add(addButton, filterField);
+        horizontalLayout.add(addButton, filterLayout);
 
         add(horizontalLayout);
 
@@ -185,26 +181,56 @@ public class RouterView extends VerticalLayout {
         routerEntityGrid.addThemeVariants(GridVariant.LUMO_ROW_STRIPES);
     }
 
-    private TextField getFilterField() {
-        TextField filterField = new TextField();
-        filterField.setPlaceholder("Поиск...");
-        filterField.setPrefixComponent(new Icon("lumo", "search"));
-        filterField.setClearButtonVisible(true);
-        filterField.setWidth("300px");
+    private HorizontalLayout getFilterLayout(RouterRepository repository) {
+        HorizontalLayout filterLayout = new HorizontalLayout();
 
-        filterField.addValueChangeListener(e -> {
-            applyFilter(e.getValue());
+        IntegerField didField = new IntegerField();
+        didField.setPlaceholder("Поиск по DID");
+        didField.setPrefixComponent(new Icon("lumo", "search"));
+
+        IntegerField setidField = new IntegerField();
+        setidField.setPlaceholder("Поиск по SetID");
+        setidField.setPrefixComponent(new Icon("lumo", "search"));
+
+        TextField descField = new TextField();
+        descField.setPlaceholder("Поиск по описанию");
+        descField.setPrefixComponent(new Icon("lumo", "search"));
+
+        Button searchButton = new Button("Поиск", e -> {
+            setupDbContext();
+
+            String did = didField.isEmpty() ? null : didField.getValue().toString();
+            String setid = setidField.isEmpty() ? null : setidField.getValue().toString();
+            String description = descField.getValue();
+
+            // Пустые значения превращаем в null
+            if (did == null || did.isBlank()) did = null;
+            if (setid == null || setid.isBlank()) setid = null;
+            if (description == null || description.isBlank()) description = null;
+
+            // Делаем запрос в БД
+            List<RouterEntity> result = repository.findByFields(did, setid, description);
+
+            dataProvider = DataProvider.fromFilteringCallbacks(
+                    (CallbackDataProvider.FetchCallback<RouterEntity, String>) query -> {
+                        // Пагинация Vaadin Grid
+                        return result.stream()
+                                .skip(query.getOffset())
+                                .limit(query.getLimit());
+                    },
+                    (CallbackDataProvider.CountCallback<RouterEntity, String>) query -> {
+                        return (int) routerRepository.count();
+                    }
+            );
+            dataProvider.refreshAll();
+            routerEntityGrid.setDataProvider(dataProvider);
+            routerEntityGrid.setItems(result);
         });
+        searchButton.addThemeVariants(ButtonVariant.LUMO_PRIMARY);
 
-        return filterField;
+        filterLayout.add(didField, setidField, descField, searchButton);
+        return filterLayout;
     }
-
-    private void applyFilter(String filterText) {
-        this.currentFilter = filterText == null ? "" : filterText.trim();
-        setupDbContext();
-        dataProvider.refreshAll();
-    }
-
 
     private Button createRouteButton(RouterRepository routerRepository) {
         Dialog dialog = new Dialog();
