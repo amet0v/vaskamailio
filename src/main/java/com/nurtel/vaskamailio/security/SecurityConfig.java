@@ -22,8 +22,11 @@ import org.springframework.security.web.SecurityFilterChain;
 @Configuration
 @EnableWebSecurity
 public class SecurityConfig {
-    @Value("${ldap.url}")
-    String ldapUrl;
+    @Value("${ldap.url1}")
+    String ldapUrl1;
+    @Value("${ldap.url2}")
+    String ldapUrl2;
+    String ldapUrl = ldapUrl1 + " " + ldapUrl2;
     @Value("${ldap.domain}")
     String ldapDomain;
     @Value("${ldap.user}")
@@ -57,12 +60,15 @@ public class SecurityConfig {
     @Bean
     public LdapContextSource contextSource() {
         LdapContextSource source = new LdapContextSource();
-        source.setUrl(ldapUrl);
+//        source.setUrl(ldapUrl1);
+        source.setUrls(new String[]{ldapUrl1, ldapUrl2});
         source.setBase(ldapBase);
 
         source.setUserDn(ldapUser);
         source.setPassword(ldapPassword);
 
+        // Включаем SSL явно (для надежности)
+        source.setPooled(false); // LDAPS бывает нестабильным с pooled=true
         source.afterPropertiesSet();
         return source;
     }

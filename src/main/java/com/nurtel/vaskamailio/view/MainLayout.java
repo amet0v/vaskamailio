@@ -2,10 +2,9 @@ package com.nurtel.vaskamailio.view;
 
 import com.nurtel.vaskamailio.db.entity.DbEntity;
 import com.nurtel.vaskamailio.db.repository.DbRepository;
-import com.unboundid.ldap.sdk.LDAPConnection;
-import com.unboundid.ldap.sdk.SearchRequest;
-import com.unboundid.ldap.sdk.SearchResult;
-import com.unboundid.ldap.sdk.SearchScope;
+import com.unboundid.ldap.sdk.*;
+import com.unboundid.util.ssl.SSLUtil;
+import com.unboundid.util.ssl.TrustAllTrustManager;
 import com.vaadin.flow.component.Key;
 import com.vaadin.flow.component.UI;
 import com.vaadin.flow.component.applayout.AppLayout;
@@ -38,10 +37,12 @@ import org.springframework.security.authentication.UsernamePasswordAuthenticatio
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.AuthenticationException;
 
+import javax.net.ssl.SSLSocketFactory;
 import java.util.List;
 
 public class MainLayout extends AppLayout {
-    private static String ldapUrl;
+    private static String ldapUrl1;
+    private static String ldapUrl2;
     private static String ldapDomain;
     private static String ldapUser;
     private static String ldapPassword;
@@ -69,14 +70,16 @@ public class MainLayout extends AppLayout {
     }
 
     public MainLayout(
-            @Value("${ldap.url}") String ldapUrl,
+            @Value("${ldap.url1}") String ldapUrl1,
+            @Value("${ldap.url2}") String ldapUrl2,
             @Value("${ldap.domain}") String ldapDomain,
             @Value("${ldap.user}") String ldapUser,
             @Value("${ldap.password}") String ldapPassword,
             @Value("${ldap.base}") String ldapBase,
             DbRepository dbRepository
     ) {
-        this.ldapUrl = ldapUrl;
+        this.ldapUrl1 = ldapUrl1;
+        this.ldapUrl2 = ldapUrl2;
         this.ldapDomain = ldapDomain;
         this.ldapUser = ldapUser;
         this.ldapPassword = ldapPassword;
@@ -240,28 +243,68 @@ public class MainLayout extends AppLayout {
     }
 
     public static String getDepartmentFromLDAP(String username) {
+
+        List<String> hosts = List.of(
+                ldapUrl1.replace("ldaps://", "").replaceAll("/$", "").split(":")[0],
+                ldapUrl2.replace("ldaps://", "").replaceAll("/$", "").split(":")[0]
+        );
+
+        int port = 636;
+
+        LDAPConnection connection = null;
+
         try {
-            System.out.println(ldapUrl);
-            System.out.println(ldapUser);
-            System.out.println(ldapPassword);
-            System.out.println(ldapBase);
-            String host = ldapUrl.replace("ldap://", "").split(":")[0];
-            // Подключение
-            LDAPConnection conn = new LDAPConnection(host, 389, ldapUser, ldapPassword);
+            // SSL-контекст – использует твой JVM truststore
+            SSLUtil sslUtil = new SSLUtil();
+            SSLSocketFactory sslSocketFactory = sslUtil.createSSLSocketFactory();
 
-            String filter = "(mailNickname=" + username + ")";
-            SearchRequest request = new SearchRequest(ldapBase, SearchScope.SUB, filter, "department");
+            // Перебираем 2 сервера
+            for (String host : hosts) {
 
-            SearchResult result = conn.search(request);
+                try {
+                    connection = new LDAPConnection(
+                            sslSocketFactory,
+                            host,
+                            port,
+                            ldapUser,
+                            ldapPassword
+                    );
 
-            if (!result.getSearchEntries().isEmpty()) {
-                return result.getSearchEntries().getFirst().getAttributeValue("department");
+                    System.out.println("Подключился к LDAPS: " + host);
+                    break;
+
+                } catch (Exception e) {
+                    System.out.println("Не удалось подключиться к: " + host + " → " + e.getMessage());
+                }
             }
 
-            conn.close();
+            if (connection == null || !connection.isConnected()) {
+                System.out.println("Оба сервера LDAP недоступны");
+                return "";
+            }
+
+            String filter = "(mailNickname=" + username + ")";
+            SearchRequest request = new SearchRequest(
+                    ldapBase,
+                    SearchScope.SUB,
+                    filter,
+                    "department"
+            );
+
+            SearchResult result = connection.search(request);
+
+            if (!result.getSearchEntries().isEmpty()) {
+                return result.getSearchEntries()
+                        .getFirst()
+                        .getAttributeValue("department");
+            }
+
         } catch (Exception e) {
             e.printStackTrace();
+        } finally {
+            if (connection != null) connection.close();
         }
+
         return "";
     }
 
