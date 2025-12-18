@@ -29,4 +29,16 @@ public class HostEntity {
 
     @Column(name = "description")
     private String description;
+
+    @Override
+    public String toString() {
+        return "HostEntity{" +
+                "id=" + id +
+                ", ip='" + ip + '\'' +
+                ", keyType=" + keyType +
+                ", valueType=" + valueType +
+                ", isActive='" + isActive + '\'' +
+                ", description='" + description + '\'' +
+                '}';
+    }
 }

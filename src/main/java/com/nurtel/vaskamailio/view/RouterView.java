@@ -1,5 +1,6 @@
 package com.nurtel.vaskamailio.view;
 
+import com.nurtel.vaskamailio.audit.repository.AuditRepository;
 import com.nurtel.vaskamailio.db.config.DatabaseContextHolder;
 import com.nurtel.vaskamailio.dispatcher.entity.DispatcherEntity;
 import com.nurtel.vaskamailio.dispatcher.repository.DispatcherRepository;
@@ -31,19 +32,21 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.stream.Collectors;
 
+import static com.nurtel.vaskamailio.audit.service.AuditService.addAuditEntity;
 import static com.nurtel.vaskamailio.router.service.RouterService.*;
 
 @Route(value = "/router", layout = MainLayout.class)
 @PageTitle("Kamailio | Router")
 public class RouterView extends VerticalLayout {
     private final RouterRepository routerRepository;
+    private final AuditRepository auditRepository;
     private CallbackDataProvider<RouterEntity, String> dataProvider;
     private Grid<RouterEntity> routerEntityGrid;
-    private String currentFilter = "";
     public static Button addButton = new Button();
 
-    public RouterView(RouterRepository routerRepository, DispatcherRepository dispatcherRepository) {
+    public RouterView(RouterRepository routerRepository, DispatcherRepository dispatcherRepository, AuditRepository auditRepository) {
         this.routerRepository = routerRepository;
+        this.auditRepository = auditRepository;
 
         Boolean isAllow = MainLayout.isAllow();
         if (!isAllow) {
@@ -62,7 +65,7 @@ public class RouterView extends VerticalLayout {
         routerEntityGrid = new Grid<>(RouterEntity.class, false);
         routerEntityGrid.getStyle().set("height", "80vh");
 
-        addButton = createRouteButton(routerRepository);
+        addButton = createRouteButton(routerRepository, auditRepository);
 
         setupDbContext();
 
@@ -140,7 +143,7 @@ public class RouterView extends VerticalLayout {
                 .setResizable(true);
 
         routerEntityGrid.addComponentColumn(routerEntity -> {
-                    Button editButton = editRouteButton(routerRepository, routerEntity);
+                    Button editButton = editRouteButton(routerRepository, routerEntity, auditRepository);
                     editButton.addThemeVariants(ButtonVariant.LUMO_WARNING);
                     editButton.getElement().getStyle()
                             .set("font-size", "20px");
@@ -159,7 +162,7 @@ public class RouterView extends VerticalLayout {
                 .setFlexGrow(0);
 
         routerEntityGrid.addComponentColumn(routerEntity -> {
-                    Button deleteButton = deleteRouteButton(routerRepository, routerEntity);
+                    Button deleteButton = deleteRouteButton(routerRepository, routerEntity, auditRepository);
                     deleteButton.addThemeVariants(ButtonVariant.LUMO_ERROR);
                     deleteButton.getElement().getStyle()
                             .set("font-size", "20px");
@@ -232,7 +235,7 @@ public class RouterView extends VerticalLayout {
         return filterLayout;
     }
 
-    private Button createRouteButton(RouterRepository routerRepository) {
+    private Button createRouteButton(RouterRepository routerRepository, AuditRepository auditRepository) {
         Dialog dialog = new Dialog();
         dialog.setHeaderTitle("New entity");
 
@@ -260,7 +263,8 @@ public class RouterView extends VerticalLayout {
 
             try {
                 setupDbContext();
-                createRoute(routerRepository, did, setid, description);
+                RouterEntity result = createRoute(routerRepository, did, setid, description);
+                addAuditEntity(auditRepository, "ADD", result.toString());
 
                 Notification.show("Запись успешно создана", 5000, Notification.Position.BOTTOM_END)
                         .addThemeVariants(NotificationVariant.LUMO_SUCCESS);
@@ -289,7 +293,7 @@ public class RouterView extends VerticalLayout {
         return addRouteButton;
     }
 
-    private Button editRouteButton(RouterRepository routerRepository, RouterEntity route) {
+    private Button editRouteButton(RouterRepository routerRepository, RouterEntity route, AuditRepository auditRepository) {
         Dialog dialog = new Dialog();
         dialog.setHeaderTitle("Edit entity");
 
@@ -321,7 +325,9 @@ public class RouterView extends VerticalLayout {
 
             try {
                 setupDbContext();
-                editRoute(routerRepository, route.getId(), did, setid, description);
+                addAuditEntity(auditRepository, "EDIT (OLD)", route.toString());
+                Optional<RouterEntity> result = editRoute(routerRepository, route.getId(), did, setid, description);
+                result.ifPresent(routerEntity -> addAuditEntity(auditRepository, "EDIT (NEW)", routerEntity.toString()));
 
                 Notification.show("Запись успешно изменена", 5000, Notification.Position.BOTTOM_END)
                         .addThemeVariants(NotificationVariant.LUMO_SUCCESS);
@@ -346,7 +352,7 @@ public class RouterView extends VerticalLayout {
         return editRouteButton;
     }
 
-    private Button deleteRouteButton(RouterRepository routerRepository, RouterEntity route) {
+    private Button deleteRouteButton(RouterRepository routerRepository, RouterEntity route, AuditRepository auditRepository) {
         Dialog dialog = new Dialog();
         dialog.setHeaderTitle("Delete entity");
 
@@ -359,6 +365,7 @@ public class RouterView extends VerticalLayout {
 
         Button deleteButton = new Button("Удалить", e -> {
             setupDbContext();
+            addAuditEntity(auditRepository, "DELETE", route.toString());
             deleteRoute(routerRepository, route.getId());
             refreshGrid();
             dialog.close();

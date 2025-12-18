@@ -29,4 +29,16 @@ public class PrefixEntity {
 
     @Column(name = "description")
     private String description;
+
+    @Override
+    public String toString() {
+        return "RegExEntity{" +
+                "id=" + id +
+                ", regex='" + regex + '\'' +
+                ", setid=" + setid +
+                ", strip=" + strip +
+                ", stripChars=" + stripChars +
+                ", description='" + description + '\'' +
+                '}';
+    }
 }

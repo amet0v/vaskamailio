@@ -1,5 +1,6 @@
 package com.nurtel.vaskamailio.view;
 
+import com.nurtel.vaskamailio.audit.repository.AuditRepository;
 import com.nurtel.vaskamailio.db.config.DatabaseContextHolder;
 import com.nurtel.vaskamailio.dispatcher.entity.DispatcherEntity;
 import com.nurtel.vaskamailio.dispatcher.repository.DispatcherRepository;
@@ -29,18 +30,21 @@ import org.springframework.data.domain.Sort;
 import java.util.*;
 import java.util.stream.Collectors;
 
+import static com.nurtel.vaskamailio.audit.service.AuditService.addAuditEntity;
 import static com.nurtel.vaskamailio.prefix.service.PrefixService.*;
 
 @Route(value = "/regex", layout = MainLayout.class)
 @PageTitle("Kamailio | RegEx")
 public class PrefixView extends VerticalLayout {
     private final PrefixRepository prefixRepository;
+    private final AuditRepository auditRepository;
     private ListDataProvider<PrefixEntity> dataProvider = new ListDataProvider<>(new ArrayList<>());
     private Grid<PrefixEntity> prefixEntityGrid;
     public static Button addButton = new Button();
 
-    public PrefixView(PrefixRepository prefixRepository, DispatcherRepository dispatcherRepository) {
+    public PrefixView(PrefixRepository prefixRepository, DispatcherRepository dispatcherRepository, AuditRepository auditRepository) {
         this.prefixRepository = prefixRepository;
+        this.auditRepository = auditRepository;
 
         Boolean isAllow = MainLayout.isAllow();
         if (!isAllow) {
@@ -59,7 +63,7 @@ public class PrefixView extends VerticalLayout {
         prefixEntityGrid = new Grid<>(PrefixEntity.class, false);
         prefixEntityGrid.getStyle().set("height", "80vh");
 
-        addButton = createPrefixButton(prefixRepository);
+        addButton = createPrefixButton(prefixRepository, auditRepository);
 
         setupDbContext();
 
@@ -125,7 +129,7 @@ public class PrefixView extends VerticalLayout {
                 .setResizable(true);
 
         prefixEntityGrid.addComponentColumn(prefixEntity -> {
-                    Button editButton = editPrefixButton(prefixRepository, prefixEntity);
+                    Button editButton = editPrefixButton(prefixRepository, prefixEntity, auditRepository);
                     editButton.addThemeVariants(ButtonVariant.LUMO_WARNING);
                     editButton.getElement().getStyle()
                             .set("font-size", "20px");
@@ -144,7 +148,7 @@ public class PrefixView extends VerticalLayout {
                 .setFlexGrow(0);
 
         prefixEntityGrid.addComponentColumn(prefixEntity -> {
-                    Button deleteButton = deletePrefixButton(prefixRepository, prefixEntity);
+                    Button deleteButton = deletePrefixButton(prefixRepository, prefixEntity, auditRepository);
                     deleteButton.addThemeVariants(ButtonVariant.LUMO_ERROR);
                     deleteButton.getElement().getStyle()
                             .set("font-size", "20px");
@@ -181,7 +185,7 @@ public class PrefixView extends VerticalLayout {
         return filterField;
     }
 
-    private Button createPrefixButton(PrefixRepository prefixRepository) {
+    private Button createPrefixButton(PrefixRepository prefixRepository, AuditRepository auditRepository) {
         Dialog dialog = new Dialog();
         dialog.setHeaderTitle("New entity");
 
@@ -217,7 +221,9 @@ public class PrefixView extends VerticalLayout {
 
             try {
                 setupDbContext();
-                createPrefix(prefixRepository, regex, setid, stripCheckbox.getValue(), stripCharsField.getValue(), description);
+                PrefixEntity result = createPrefix(prefixRepository, regex, setid, stripCheckbox.getValue(), stripCharsField.getValue(), description);
+                addAuditEntity(auditRepository, "ADD", result.toString());
+
                 Notification.show("Запись успешно создана", 5000, Notification.Position.BOTTOM_END)
                         .addThemeVariants(NotificationVariant.LUMO_SUCCESS);
             } catch (NumberFormatException exception) {
@@ -244,7 +250,7 @@ public class PrefixView extends VerticalLayout {
         return addPrefixButton;
     }
 
-    private Button editPrefixButton(PrefixRepository prefixRepository, PrefixEntity prefix) {
+    private Button editPrefixButton(PrefixRepository prefixRepository, PrefixEntity prefix, AuditRepository auditRepository) {
         Dialog dialog = new Dialog();
         dialog.setHeaderTitle("Edit entity");
 
@@ -286,7 +292,10 @@ public class PrefixView extends VerticalLayout {
 
             try {
                 setupDbContext();
-                editPrefix(prefixRepository, prefix.getId(), regex, setid, stripCheckbox.getValue(), stripCharsField.getValue(), description);
+                addAuditEntity(auditRepository, "EDIT (OLD)", prefix.toString());
+                Optional<PrefixEntity> result = editPrefix(
+                        prefixRepository, prefix.getId(), regex, setid, stripCheckbox.getValue(), stripCharsField.getValue(), description);
+                result.ifPresent(prefixEntity -> addAuditEntity(auditRepository, "EDIT (NEW)", prefixEntity.toString()));
 
                 Notification.show("Запись успешно изменена", 5000, Notification.Position.BOTTOM_END)
                         .addThemeVariants(NotificationVariant.LUMO_SUCCESS);
@@ -311,7 +320,7 @@ public class PrefixView extends VerticalLayout {
         return editPrefixButton;
     }
 
-    private Button deletePrefixButton(PrefixRepository prefixRepository, PrefixEntity prefix) {
+    private Button deletePrefixButton(PrefixRepository prefixRepository, PrefixEntity prefix, AuditRepository auditRepository) {
         Dialog dialog = new Dialog();
         dialog.setHeaderTitle("Delete entity");
 
@@ -324,6 +333,7 @@ public class PrefixView extends VerticalLayout {
 
         Button deleteButton = new Button("Удалить", e -> {
             setupDbContext();
+            addAuditEntity(auditRepository, "DELETE", prefix.toString());
             deletePrefix(prefixRepository, prefix.getId());
             refreshGrid();
             dialog.close();

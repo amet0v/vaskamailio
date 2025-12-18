@@ -20,4 +20,17 @@ public class DbEntity {
     String password;
     String mscSocket;
     String asteriskSocket;
+
+    @Override
+    public String toString() {
+        return "DbEntity{" +
+                "id=" + id +
+                ", ip='" + ip + '\'' +
+                ", name='" + name + '\'' +
+                ", login='" + login + '\'' +
+                ", password='" + password + '\'' +
+                ", mscSocket='" + mscSocket + '\'' +
+                ", asteriskSocket='" + asteriskSocket + '\'' +
+                '}';
+    }
 }

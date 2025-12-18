@@ -3,6 +3,7 @@ package com.nurtel.vaskamailio.view;
 import com.jcraft.jsch.ChannelExec;
 import com.jcraft.jsch.JSch;
 import com.jcraft.jsch.Session;
+import com.nurtel.vaskamailio.audit.repository.AuditRepository;
 import com.nurtel.vaskamailio.db.entity.DbEntity;
 import com.nurtel.vaskamailio.db.repository.DbRepository;
 import com.vaadin.flow.component.Html;
@@ -25,6 +26,8 @@ import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.util.List;
 
+import static com.nurtel.vaskamailio.audit.service.AuditService.addAuditEntity;
+
 @Route(value = "/management", layout = MainLayout.class)
 @PageTitle("Kamailio | Management")
 public class ManagementView extends VerticalLayout {
@@ -35,7 +38,8 @@ public class ManagementView extends VerticalLayout {
     public ManagementView(
             @Value("${ssh.login}") String sshLogin,
             @Value("${ssh.password}") String sshPassword,
-            DbRepository dbRepository
+            DbRepository dbRepository,
+            AuditRepository auditRepository
     ) {
         this.sshLogin = sshLogin;
         this.sshPassword = sshPassword;
@@ -53,13 +57,13 @@ public class ManagementView extends VerticalLayout {
         List<DbEntity> dbEntityList = dbRepository.findAllByOrderByIdAsc();
 
         for (DbEntity db : dbEntityList) {
-            HorizontalLayout buttonsLayout = createButtonLayout(db);
+            HorizontalLayout buttonsLayout = createButtonLayout(db, auditRepository);
             add(buttonsLayout);
         }
         add(outputArea);
     }
 
-    private HorizontalLayout createButtonLayout(DbEntity db) {
+    private HorizontalLayout createButtonLayout(DbEntity db, AuditRepository auditRepository) {
         HorizontalLayout hl = new HorizontalLayout();
         hl.setPadding(false);
         hl.setSpacing(true);
@@ -71,11 +75,11 @@ public class ManagementView extends VerticalLayout {
         hl.add(new Html("<h4>" + db.getName() + "</h4>"));
 
         hl.add(new Button("Reload routes", VaadinIcon.REFRESH.create(),
-                e -> runCommandOn(db.getIp(), "sudo /usr/sbin/kamcmd htable.reload routes")));
+                e -> runCommandOn(db.getIp(), "sudo /usr/sbin/kamcmd htable.reload routes", auditRepository)));
         hl.add(new Button("Reload hosts", VaadinIcon.REFRESH.create(),
-                e -> runCommandOn(db.getIp(), "sudo /usr/sbin/kamcmd htable.reload hosts")));
+                e -> runCommandOn(db.getIp(), "sudo /usr/sbin/kamcmd htable.reload hosts", auditRepository)));
         hl.add(new Button("Reload dispatcher", VaadinIcon.REFRESH.create(),
-                e -> runCommandOn(db.getIp(), "sudo /usr/sbin/kamcmd dispatcher.reload")));
+                e -> runCommandOn(db.getIp(), "sudo /usr/sbin/kamcmd dispatcher.reload", auditRepository)));
 
         Button restartBtn = new Button("Restart kamailio", VaadinIcon.POWER_OFF.create(), e -> {
             Dialog dialog = new Dialog();
@@ -87,7 +91,7 @@ public class ManagementView extends VerticalLayout {
 
             Button confirmButton = new Button("Перезагрузить", ev -> {
                 dialog.close();
-                runCommandOn(db.getIp(), "sudo /bin/systemctl restart kamailio.service");
+                runCommandOn(db.getIp(), "sudo /bin/systemctl restart kamailio.service", auditRepository);
             });
 
             Button cancelButton = new Button("Отмена", ev -> dialog.close());
@@ -99,17 +103,18 @@ public class ManagementView extends VerticalLayout {
         hl.add(restartBtn);
 
         hl.add(new Button("Kamailio status", VaadinIcon.CHECK_CIRCLE_O.create(),
-                e -> runCommandOn(db.getIp(), "sudo /bin/systemctl status kamailio.service")));
+                e -> runCommandOn(db.getIp(), "sudo /bin/systemctl status kamailio.service", auditRepository)));
 
         return hl;
     }
 
-    private void runCommandOn(String host, String command) {
+    private void runCommandOn(String host, String command, AuditRepository auditRepository) {
         outputArea.clear();
         StringBuilder combinedOutput = new StringBuilder("🔧 Выполняется команда: " + command + " на " + host + "\n\n");
 
         String remoteOutput = runRemoteCommandWithPassword(host, sshLogin, sshPassword, command);
         combinedOutput.append("🌐 Удалённый результат:\n").append(remoteOutput);
+        addAuditEntity(auditRepository, "COMMAND", command + " on " + host);
 
         outputArea.setValue(combinedOutput.toString());
     }

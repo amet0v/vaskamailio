@@ -54,7 +54,7 @@ public class CdrView extends VerticalLayout {
                 ));
 
         Grid<CdrEntity> cdrGrid = new Grid<>(CdrEntity.class, false);
-        cdrGrid.setHeight("70vh");
+        cdrGrid.setHeight("75vh");
 
 //        cdrGrid.addColumn(CdrEntity::getId)
 //                .setHeader("ID")

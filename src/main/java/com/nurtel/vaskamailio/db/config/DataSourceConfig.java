@@ -109,7 +109,10 @@ public class DataSourceConfig {
         jpaProperties.put("hibernate.dialect", "org.hibernate.dialect.PostgreSQLDialect");
         return builder
                 .dataSource(dataSource)
-                .packages("com.nurtel.vaskamailio.db.entity")
+                .packages(
+                        "com.nurtel.vaskamailio.db.entity",
+                        "com.nurtel.vaskamailio.audit.entity"
+                )
                 .persistenceUnit("databases")
 //                .properties(jpaProperties)
                 .build();

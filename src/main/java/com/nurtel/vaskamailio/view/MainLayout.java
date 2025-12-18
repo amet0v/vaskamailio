@@ -1,5 +1,6 @@
 package com.nurtel.vaskamailio.view;
 
+import com.nurtel.vaskamailio.audit.repository.AuditRepository;
 import com.nurtel.vaskamailio.db.entity.DbEntity;
 import com.nurtel.vaskamailio.db.repository.DbRepository;
 import com.unboundid.ldap.sdk.*;
@@ -40,6 +41,8 @@ import org.springframework.security.core.AuthenticationException;
 import javax.net.ssl.SSLSocketFactory;
 import java.util.List;
 
+import static com.nurtel.vaskamailio.audit.service.AuditService.addAuditEntity;
+
 public class MainLayout extends AppLayout {
     private static String ldapUrl1;
     private static String ldapUrl2;
@@ -76,7 +79,8 @@ public class MainLayout extends AppLayout {
             @Value("${ldap.user}") String ldapUser,
             @Value("${ldap.password}") String ldapPassword,
             @Value("${ldap.base}") String ldapBase,
-            DbRepository dbRepository
+            DbRepository dbRepository,
+            AuditRepository auditRepository
     ) {
         this.ldapUrl1 = ldapUrl1;
         this.ldapUrl2 = ldapUrl2;
@@ -85,11 +89,11 @@ public class MainLayout extends AppLayout {
         this.ldapPassword = ldapPassword;
         this.ldapBase = ldapBase;
 
-        createHeader(dbRepository);
+        createHeader(dbRepository, auditRepository);
         createSidebar();
     }
 
-    private void createHeader(DbRepository dbRepository) {
+    private void createHeader(DbRepository dbRepository, AuditRepository auditRepository) {
         StreamResource imageResource = new StreamResource("logo_o.svg",
                 () -> getClass().getResourceAsStream("/images/logo_o.svg"));
 
@@ -125,7 +129,7 @@ public class MainLayout extends AppLayout {
         nurLogo.setDefaultVerticalComponentAlignment(FlexComponent.Alignment.CENTER);
         nurLogo.add(image, logo, dbSelector);
 
-        Button loginButton = createLoginButton();
+        Button loginButton = createLoginButton(auditRepository);
 
         Button logoutButton = new Button("Выйти", VaadinIcon.POWER_OFF.create(), e -> {
             VaadinSession.getCurrent().getSession().invalidate();
@@ -179,7 +183,7 @@ public class MainLayout extends AppLayout {
         addToNavbar(header);
     }
 
-    private Button createLoginButton() {
+    private Button createLoginButton(AuditRepository auditRepository) {
         Dialog loginDialog = new Dialog();
 
         loginDialog.setHeaderTitle("Вход в систему");
@@ -208,6 +212,7 @@ public class MainLayout extends AppLayout {
                 wrappedSession.setMaxInactiveInterval(sessionInterval);
 
                 loginDialog.close();
+                addAuditEntity(auditRepository, username,"AUTH", "SUCCESS");
 
                 UI.getCurrent().getPage().reload();
 
@@ -217,6 +222,7 @@ public class MainLayout extends AppLayout {
                 System.out.println(ex);
                 System.out.println("Ошибка авторизации пользователя: " + username);
 
+                addAuditEntity(auditRepository, username,"AUTH", "FAILED");
                 Notification.show("Неверные учетные данные", 5000, Notification.Position.BOTTOM_END)
                         .addThemeVariants(NotificationVariant.LUMO_ERROR);
             }
@@ -339,7 +345,11 @@ public class MainLayout extends AppLayout {
         dbIcon.setColor("#b8c7ce");
         SideNavItem dbItem = new SideNavItem("Базы данных", DbView.class, dbIcon);
 
-        List<SideNavItem> sideNavItems = List.of(routerDidItem, prefixItem, dispatcherItem, hostsItem, cdrItem, managementItem, dbItem);
+        Icon auditIcon = VaadinIcon.FILE_SEARCH.create();
+        auditIcon.setColor("#b8c7ce");
+        SideNavItem auditItem = new SideNavItem("Аудит", AuditView.class, auditIcon);
+
+        List<SideNavItem> sideNavItems = List.of(routerDidItem, prefixItem, dispatcherItem, hostsItem, cdrItem, managementItem, dbItem, auditItem);
 
         for (SideNavItem item : sideNavItems) {
             item.getStyle()

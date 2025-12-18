@@ -1,5 +1,6 @@
 package com.nurtel.vaskamailio.view;
 
+import com.nurtel.vaskamailio.audit.repository.AuditRepository;
 import com.nurtel.vaskamailio.db.entity.DbEntity;
 import com.nurtel.vaskamailio.db.repository.DbRepository;
 import com.nurtel.vaskamailio.db.service.DbService;
@@ -27,6 +28,7 @@ import org.springframework.data.domain.Sort;
 import java.util.ArrayList;
 import java.util.List;
 
+import static com.nurtel.vaskamailio.audit.service.AuditService.addAuditEntity;
 import static com.nurtel.vaskamailio.db.service.DbService.*;
 
 @Route(value = "db", layout = MainLayout.class)
@@ -34,12 +36,14 @@ import static com.nurtel.vaskamailio.db.service.DbService.*;
 public class DbView extends VerticalLayout {
     private final DbRepository dbRepository;
     private final DispatcherRepository dispatcherRepository;
+    private final AuditRepository auditRepository;
     private ListDataProvider<DbEntity> dataProvider = new ListDataProvider<>(new ArrayList<>());
     private Grid<DbEntity> dbEntityGrid;
 
-    public DbView(DbRepository dbRepository, DispatcherRepository dispatcherRepository) {
+    public DbView(DbRepository dbRepository, DispatcherRepository dispatcherRepository, AuditRepository auditRepository) {
         this.dbRepository = dbRepository;
         this.dispatcherRepository = dispatcherRepository;
+        this.auditRepository = auditRepository;
 
         Boolean isAllow = MainLayout.isAllow();
         if (!isAllow) {
@@ -51,7 +55,7 @@ public class DbView extends VerticalLayout {
         dbEntityGrid = new Grid<>(DbEntity.class, false);
         dbEntityGrid.getStyle().set("height", "80vh");
 
-        Button addButton = createDbButton(dbRepository);
+        Button addButton = createDbButton(dbRepository, auditRepository);
         Button copyDbButton = new Button("Копировать БД", e -> {
             Dialog dialog = new Dialog();
 
@@ -81,10 +85,12 @@ public class DbView extends VerticalLayout {
                 }
 
                 String result = DbService.copyDb(source.getIp(), target.getIp());
+                addAuditEntity(auditRepository, "COPY DB", result);
                 Notification.show(result, 5000, Notification.Position.BOTTOM_END)
                         .addThemeVariants(NotificationVariant.LUMO_SUCCESS);;
                 try {
                     result = DbService.editAttrs(dbRepository, dispatcherRepository, target.getIp());
+                    addAuditEntity(auditRepository, "COPY DB", result);
                     Notification.show(result, 5000, Notification.Position.BOTTOM_END)
                             .addThemeVariants(NotificationVariant.LUMO_SUCCESS);;
                 } catch (NotFoundException ex) {
@@ -211,7 +217,7 @@ public class DbView extends VerticalLayout {
             return filterField;
         }
 
-        private Button createDbButton (DbRepository dbRepository){
+        private Button createDbButton (DbRepository dbRepository, AuditRepository auditRepository){
             Dialog dialog = new Dialog();
             dialog.setHeaderTitle("New entity");
 
@@ -239,7 +245,7 @@ public class DbView extends VerticalLayout {
                 }
 
                 try {
-                    createDb(
+                    DbEntity result = createDb(
                             dbRepository,
                             ip,
                             nameField.getValue(),
@@ -248,6 +254,7 @@ public class DbView extends VerticalLayout {
                             loginField.getValue(),
                             passwordField.getValue()
                     );
+                    addAuditEntity(auditRepository, "ADD", result.toString());
                     Notification.show("Запись успешно создана", 5000, Notification.Position.BOTTOM_END)
                             .addThemeVariants(NotificationVariant.LUMO_SUCCESS);
                 } catch (NumberFormatException exception) {
@@ -316,7 +323,8 @@ public class DbView extends VerticalLayout {
                 }
 
                 try {
-                    editDb(
+                    addAuditEntity(auditRepository, "EDIT (OLD)", db.toString());
+                    DbEntity result = editDb(
                             dbRepository,
                             db.getId(),
                             ip,
@@ -326,7 +334,7 @@ public class DbView extends VerticalLayout {
                             loginField.getValue(),
                             passwordField.getValue()
                     );
-
+                    addAuditEntity(auditRepository, "EDIT (NEW)", result.toString());
                     Notification.show("Запись успешно изменена", 5000, Notification.Position.BOTTOM_END)
                             .addThemeVariants(NotificationVariant.LUMO_SUCCESS);
                 } catch (NotFoundException | NumberFormatException exception) {
@@ -362,6 +370,7 @@ public class DbView extends VerticalLayout {
             dialogLayout.add(text);
 
             Button deleteButton = new Button("Удалить", e -> {
+                addAuditEntity(auditRepository, "DELETE", db.toString());
                 deleteDb(dbRepository, db.getId());
                 refreshGrid();
                 dialog.close();

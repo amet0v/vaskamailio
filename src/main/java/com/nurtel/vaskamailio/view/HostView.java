@@ -1,5 +1,6 @@
 package com.nurtel.vaskamailio.view;
 
+import com.nurtel.vaskamailio.audit.repository.AuditRepository;
 import com.nurtel.vaskamailio.db.config.DatabaseContextHolder;
 import com.nurtel.vaskamailio.host.repository.HostRepository;
 import com.nurtel.vaskamailio.host.entity.HostEntity;
@@ -28,18 +29,21 @@ import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
 
+import static com.nurtel.vaskamailio.audit.service.AuditService.addAuditEntity;
 import static com.nurtel.vaskamailio.host.service.HostService.*;
 
 @Route(value = "/hosts", layout = MainLayout.class)
 @PageTitle("Kamailio | Hosts")
 public class HostView extends VerticalLayout {
     private final HostRepository hostRepository;
+    private final AuditRepository auditRepository;
     private ListDataProvider<HostEntity> dataProvider = new ListDataProvider<>(new ArrayList<>());
     private Grid<HostEntity> hostEntityGrid;
     public static Button addButton = new Button();
 
-    public HostView(HostRepository hostRepository) {
+    public HostView(HostRepository hostRepository, AuditRepository auditRepository) {
         this.hostRepository = hostRepository;
+        this.auditRepository = auditRepository;
 
         Boolean isAllow = MainLayout.isAllow();
         if (!isAllow) {
@@ -53,7 +57,7 @@ public class HostView extends VerticalLayout {
         hostEntityGrid = new Grid<>(HostEntity.class, false);
         hostEntityGrid.getStyle().set("height", "80vh");
 
-        addButton = createHostButton(hostRepository);
+        addButton = createHostButton(hostRepository, auditRepository);
 
         List<HostEntity> items = hostRepository.findAll(Sort.by("id"));
         dataProvider = new ListDataProvider<>(items);
@@ -115,7 +119,7 @@ public class HostView extends VerticalLayout {
                 .setResizable(true);
 
         hostEntityGrid.addComponentColumn(HostEntity -> {
-                    Button editButton = editHostButton(hostRepository, HostEntity);
+                    Button editButton = editHostButton(hostRepository, HostEntity, auditRepository);
                     editButton.addThemeVariants(ButtonVariant.LUMO_WARNING);
                     editButton.getElement().getStyle()
                             .set("font-size", "20px");
@@ -134,7 +138,7 @@ public class HostView extends VerticalLayout {
                 .setFlexGrow(0);
 
         hostEntityGrid.addComponentColumn(HostEntity -> {
-                    Button deleteButton = deleteHostButton(hostRepository, HostEntity);
+                    Button deleteButton = deleteHostButton(hostRepository, HostEntity, auditRepository);
                     deleteButton.addThemeVariants(ButtonVariant.LUMO_ERROR);
                     deleteButton.getElement().getStyle()
                             .set("font-size", "20px");
@@ -173,7 +177,7 @@ public class HostView extends VerticalLayout {
         return filterField;
     }
 
-    private Button createHostButton(HostRepository hostRepository) {
+    private Button createHostButton(HostRepository hostRepository, AuditRepository auditRepository) {
         Dialog dialog = new Dialog();
         dialog.setHeaderTitle("New entity");
 
@@ -202,8 +206,8 @@ public class HostView extends VerticalLayout {
 
             try {
                 setupDbContext();
-                createHost(hostRepository, ip, isActive, description);
-
+                HostEntity result = createHost(hostRepository, ip, isActive, description);
+                addAuditEntity(auditRepository, "ADD", result.toString());
                 Notification.show("Запись успешно создана", 5000, Notification.Position.BOTTOM_END)
                         .addThemeVariants(NotificationVariant.LUMO_SUCCESS);
             } catch (NumberFormatException exception) {
@@ -233,7 +237,7 @@ public class HostView extends VerticalLayout {
         return addRouteButton;
     }
 
-    private Button editHostButton(HostRepository hostRepository, HostEntity host) {
+    private Button editHostButton(HostRepository hostRepository, HostEntity host, AuditRepository auditRepository) {
         Dialog dialog = new Dialog();
         dialog.setHeaderTitle("Edit entity");
 
@@ -266,8 +270,9 @@ public class HostView extends VerticalLayout {
 
             try {
                 setupDbContext();
-                editHost(hostRepository, host.getId(), ip, isActive, description);
-
+                addAuditEntity(auditRepository, "EDIT (OLD)", host.toString());
+                Optional<HostEntity> result = editHost(hostRepository, host.getId(), ip, isActive, description);
+                result.ifPresent(hostEntity -> addAuditEntity(auditRepository, "EDIT (NEW)", hostEntity.toString()));
                 Notification.show("Запись успешно изменена", 5000, Notification.Position.BOTTOM_END)
                         .addThemeVariants(NotificationVariant.LUMO_SUCCESS);
             } catch (NumberFormatException exception) {
@@ -291,7 +296,7 @@ public class HostView extends VerticalLayout {
         return editHostButton;
     }
 
-    private Button deleteHostButton(HostRepository hostRepository, HostEntity host) {
+    private Button deleteHostButton(HostRepository hostRepository, HostEntity host, AuditRepository auditRepository) {
         Dialog dialog = new Dialog();
         dialog.setHeaderTitle("Delete entity");
 
@@ -304,6 +309,7 @@ public class HostView extends VerticalLayout {
 
         Button deleteButton = new Button("Удалить", e -> {
             setupDbContext();
+            addAuditEntity(auditRepository, "DELETE", host.toString());
             deleteHost(hostRepository, host.getId());
             refreshGrid();
             dialog.close();

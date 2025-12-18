@@ -32,4 +32,17 @@ public class DispatcherEntity {
 
     @Column(length = 64, nullable = false)
     private String description;
+
+    @Override
+    public String toString() {
+        return "DispatcherEntity{" +
+                "id=" + id +
+                ", setid=" + setid +
+                ", destination='" + destination + '\'' +
+                ", flags=" + flags +
+                ", priority=" + priority +
+                ", attrs='" + attrs + '\'' +
+                ", description='" + description + '\'' +
+                '}';
+    }
 }

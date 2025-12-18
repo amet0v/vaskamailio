@@ -29,4 +29,16 @@ public class RouterEntity {
 
     @Column(name = "description")
     private String description;
+
+    @Override
+    public String toString() {
+        return "RouterEntity{" +
+                "id=" + id +
+                ", did='" + did + '\'' +
+                ", keyType=" + keyType +
+                ", valueType=" + valueType +
+                ", setid='" + setid + '\'' +
+                ", description='" + description + '\'' +
+                '}';
+    }
 }
