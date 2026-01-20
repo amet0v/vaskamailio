@@ -72,7 +72,7 @@ public class DbService {
         String dbUser = "kamailio";
 
         String command = String.format(
-                "pg_dump --clean --if-exists -h %s -U %s %s | psql -h %s -U %s %s",
+                "pg_dump --clean --if-exists -h %s -U %s %s --exclude-table=public.databases --exclude-table=public.cdr --exclude-table=public.audit | psql -h %s -U %s %s",
                 sourceIp, dbUser, dbName, targetIp, dbUser, dbName
         );
 
@@ -114,6 +114,6 @@ public class DbService {
             else dispatcherEntity.setAttrs("socket=udp:" + db.getAsteriskSocket());
             dispatcherRepository.save(dispatcherEntity);
         }
-        return "Аттрибуты dispatcher на сервере " + db.getName() + "успешно изменены";
+        return "Аттрибуты dispatcher на сервере " + db.getName() + " успешно изменены";
     }
 }

@@ -29,8 +29,10 @@ import com.vaadin.flow.component.sidenav.SideNavItem;
 import com.vaadin.flow.component.textfield.PasswordField;
 import com.vaadin.flow.component.textfield.TextField;
 import com.vaadin.flow.server.StreamResource;
+import com.vaadin.flow.server.VaadinService;
 import com.vaadin.flow.server.VaadinSession;
 import com.vaadin.flow.server.WrappedSession;
+import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.authentication.AuthenticationManager;
@@ -212,7 +214,8 @@ public class MainLayout extends AppLayout {
                 wrappedSession.setMaxInactiveInterval(sessionInterval);
 
                 loginDialog.close();
-                addAuditEntity(auditRepository, username,"AUTH", "SUCCESS");
+                String ip = getClientIp();
+                addAuditEntity(auditRepository, username,"AUTH", "IP: " + ip + " result: SUCCESS");
 
                 UI.getCurrent().getPage().reload();
 
@@ -222,7 +225,8 @@ public class MainLayout extends AppLayout {
                 System.out.println(ex);
                 System.out.println("Ошибка авторизации пользователя: " + username);
 
-                addAuditEntity(auditRepository, username,"AUTH", "FAILED");
+                String ip = getClientIp();
+                addAuditEntity(auditRepository, username,"AUTH", "IP: " + ip + " result: FAIL");
                 Notification.show("Неверные учетные данные", 5000, Notification.Position.BOTTOM_END)
                         .addThemeVariants(NotificationVariant.LUMO_ERROR);
             }
@@ -246,6 +250,23 @@ public class MainLayout extends AppLayout {
                 .set("color", "#ffffff");
 
         return loginButton;
+    }
+
+    private String getClientIp() {
+        HttpServletRequest request =
+                (HttpServletRequest) VaadinService.getCurrentRequest();
+
+        if (request == null) {
+            return "unknown";
+        }
+
+        // Если есть прокси / балансировщик
+        String xForwardedFor = request.getHeader("X-Forwarded-For");
+        if (xForwardedFor != null && !xForwardedFor.isEmpty()) {
+            return xForwardedFor.split(",")[0].trim();
+        }
+
+        return request.getRemoteAddr();
     }
 
     public static String getDepartmentFromLDAP(String username) {
