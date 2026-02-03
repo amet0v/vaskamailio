@@ -8,6 +8,7 @@ import com.nurtel.vaskamailio.dispatcher.entity.DispatcherEntity;
 import com.nurtel.vaskamailio.dispatcher.repository.DispatcherRepository;
 import com.nurtel.vaskamailio.host.entity.HostEntity;
 import com.nurtel.vaskamailio.host.repository.HostRepository;
+import com.vaadin.flow.component.ComponentUtil;
 import com.vaadin.flow.component.Text;
 import com.vaadin.flow.component.UI;
 import com.vaadin.flow.component.button.Button;
@@ -26,6 +27,7 @@ import com.vaadin.flow.component.textfield.TextField;
 import com.vaadin.flow.data.provider.ListDataProvider;
 import com.vaadin.flow.router.PageTitle;
 import com.vaadin.flow.router.Route;
+import com.vaadin.flow.server.VaadinSession;
 import org.springframework.data.domain.Sort;
 
 import java.util.ArrayList;
@@ -259,7 +261,7 @@ public class DispatcherView extends VerticalLayout {
             //destinationField.clear();
             //descriptionField.clear();
 
-            String selectedDb = getSelectedDb().get();
+            String selectedDb = getSelectedDb();
             System.out.println(selectedDb);
             Optional<DbEntity> db = dbRepository.findByName(selectedDb);
             if (db.isPresent()) {
@@ -457,14 +459,16 @@ public class DispatcherView extends VerticalLayout {
     }
 
     private void setupDbContext() {
-        getSelectedDb().ifPresent(DatabaseContextHolder::set);
+        Object value = ComponentUtil.getData(UI.getCurrent(), "selectedDb");
+        String db = value != null ? value.toString() : null;
+        if (db != null) {
+            DatabaseContextHolder.set(db);
+        }
     }
 
-    private Optional<String> getSelectedDb() {
-        return UI.getCurrent().getChildren()
-                .filter(c -> c instanceof MainLayout)
-                .map(c -> ((MainLayout) c).getDbSelector().getValue())
-                .findFirst();
+    private String getSelectedDb() {
+        return (String) VaadinSession.getCurrent()
+                .getAttribute("selectedDb");
     }
 
     private void refreshGrid() {

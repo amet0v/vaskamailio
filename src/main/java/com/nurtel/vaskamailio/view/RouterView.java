@@ -6,6 +6,7 @@ import com.nurtel.vaskamailio.dispatcher.entity.DispatcherEntity;
 import com.nurtel.vaskamailio.dispatcher.repository.DispatcherRepository;
 import com.nurtel.vaskamailio.router.entity.RouterEntity;
 import com.nurtel.vaskamailio.router.repository.RouterRepository;
+import com.vaadin.flow.component.ComponentUtil;
 import com.vaadin.flow.component.Text;
 import com.vaadin.flow.component.UI;
 import com.vaadin.flow.component.button.Button;
@@ -69,11 +70,11 @@ public class RouterView extends VerticalLayout {
 
         setupDbContext();
 
+        List<RouterEntity> result = routerRepository.findAll(Sort.by("id"));
         dataProvider = DataProvider.fromFilteringCallbacks(
                 (CallbackDataProvider.FetchCallback<RouterEntity, String>) query -> {
-                    List<RouterEntity> allItems = routerRepository.findAll(Sort.by("id"));
                     // Пагинация Vaadin Grid
-                    return allItems.stream()
+                    return result.stream()
                             .skip(query.getOffset())
                             .limit(query.getLimit());
                 },
@@ -81,9 +82,9 @@ public class RouterView extends VerticalLayout {
                     return (int) routerRepository.count();
                 }
         );
-
-
+        dataProvider.refreshAll();
         routerEntityGrid.setDataProvider(dataProvider);
+        routerEntityGrid.setItems(result);
 
         HorizontalLayout filterLayout = getFilterLayout(routerRepository);
 
@@ -398,20 +399,17 @@ public class RouterView extends VerticalLayout {
     }
 
     private void setupDbContext() {
-        getSelectedDb().ifPresent(DatabaseContextHolder::set);
-    }
-
-    private Optional<String> getSelectedDb() {
-        return UI.getCurrent().getChildren()
-                .filter(c -> c instanceof MainLayout)
-                .map(c -> ((MainLayout) c).getDbSelector().getValue())
-                .findFirst();
+        Object value = ComponentUtil.getData(UI.getCurrent(), "selectedDb");
+        String db = value != null ? value.toString() : null;
+        if (db != null) {
+            DatabaseContextHolder.set(db);
+        }
     }
 
     private void refreshGrid() {
-//        List<RouterEntity> updatedItems = routerRepository.findAll(Sort.by("id"));
-//        dataProvider.getItems().clear();
-//        dataProvider.getItems().addAll(updatedItems);
+        setupDbContext();
+        List<RouterEntity> updated = routerRepository.findAll(Sort.by("id"));
+        routerEntityGrid.setItems(updated);
         dataProvider.refreshAll();
     }
 }

@@ -6,6 +6,7 @@ import com.nurtel.vaskamailio.db.repository.DbRepository;
 import com.unboundid.ldap.sdk.*;
 import com.unboundid.util.ssl.SSLUtil;
 import com.unboundid.util.ssl.TrustAllTrustManager;
+import com.vaadin.flow.component.ComponentUtil;
 import com.vaadin.flow.component.Key;
 import com.vaadin.flow.component.UI;
 import com.vaadin.flow.component.applayout.AppLayout;
@@ -116,6 +117,17 @@ public class MainLayout extends AppLayout {
         dbSelector.setItems(dbSelectorItems);
         dbSelector.setValue(dbSelectorItems.getFirst());
 
+        Object value = ComponentUtil.getData(UI.getCurrent(), "selectedDb");
+        String selectedDb = value != null ? value.toString() : null;
+
+        if (selectedDb != null) {
+            dbSelector.setValue(selectedDb);
+        } else {
+            String defaultDb = dbSelectorItems.getFirst();
+            dbSelector.setValue(defaultDb);
+            ComponentUtil.setData(UI.getCurrent(), "selectedDb", defaultDb);
+        }
+
 //        updateDbSelector();
 
         dbSelector.getStyle()
@@ -123,6 +135,9 @@ public class MainLayout extends AppLayout {
                 .set("color", "#ffffff");
 
         dbSelector.addValueChangeListener(e -> {
+//            UI.getCurrent().refreshCurrentRoute(false);
+
+            ComponentUtil.setData(UI.getCurrent(), "selectedDb", e.getValue());
             UI.getCurrent().refreshCurrentRoute(false);
         });
 

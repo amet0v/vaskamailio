@@ -5,6 +5,7 @@ import com.nurtel.vaskamailio.cdr.repository.CdrRepository;
 import com.nurtel.vaskamailio.db.config.DatabaseContextHolder;
 import com.nurtel.vaskamailio.dispatcher.entity.DispatcherEntity;
 import com.nurtel.vaskamailio.dispatcher.repository.DispatcherRepository;
+import com.vaadin.flow.component.ComponentUtil;
 import com.vaadin.flow.component.Text;
 import com.vaadin.flow.component.UI;
 import com.vaadin.flow.component.button.Button;
@@ -20,6 +21,7 @@ import com.vaadin.flow.component.textfield.IntegerField;
 import com.vaadin.flow.component.textfield.TextField;
 import com.vaadin.flow.router.PageTitle;
 import com.vaadin.flow.router.Route;
+import com.vaadin.flow.server.VaadinSession;
 
 import java.time.LocalDateTime;
 import java.util.List;
@@ -155,13 +157,10 @@ public class CdrView extends VerticalLayout {
     }
 
     private void setupDbContext() {
-        getSelectedDb().ifPresent(DatabaseContextHolder::set);
-    }
-
-    private Optional<String> getSelectedDb() {
-        return UI.getCurrent().getChildren()
-                .filter(c -> c instanceof MainLayout)
-                .map(c -> ((MainLayout) c).getDbSelector().getValue())
-                .findFirst();
+        Object value = ComponentUtil.getData(UI.getCurrent(), "selectedDb");
+        String db = value != null ? value.toString() : null;
+        if (db != null) {
+            DatabaseContextHolder.set(db);
+        }
     }
 }
