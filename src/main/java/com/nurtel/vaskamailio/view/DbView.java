@@ -84,16 +84,17 @@ public class DbView extends VerticalLayout {
                     return;
                 }
 
-                String result = DbService.copyDb(source.getIp(), target.getIp());
-                addAuditEntity(auditRepository, "COPY DB", result);
-                Notification.show(result, 5000, Notification.Position.BOTTOM_END)
-                        .addThemeVariants(NotificationVariant.LUMO_SUCCESS);;
                 try {
+                    String result = DbService.copyDb(source.getIp(), target.getIp());
+                    addAuditEntity(auditRepository, "COPY DB", result);
+                    Notification.show(result, 5000, Notification.Position.BOTTOM_END)
+                            .addThemeVariants(NotificationVariant.LUMO_SUCCESS);
+
                     result = DbService.editAttrs(dbRepository, dispatcherRepository, target.getIp());
                     addAuditEntity(auditRepository, "COPY DB", result);
                     Notification.show(result, 5000, Notification.Position.BOTTOM_END)
-                            .addThemeVariants(NotificationVariant.LUMO_SUCCESS);;
-                } catch (NotFoundException ex) {
+                            .addThemeVariants(NotificationVariant.LUMO_SUCCESS);
+                } catch (NotFoundException | RuntimeException ex) {
                     Notification.show(ex.toString(), 5000, Notification.Position.BOTTOM_END)
                             .addThemeVariants(NotificationVariant.LUMO_ERROR);
                 }
