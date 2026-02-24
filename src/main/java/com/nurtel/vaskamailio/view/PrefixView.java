@@ -26,7 +26,6 @@ import com.vaadin.flow.component.textfield.TextField;
 import com.vaadin.flow.data.provider.ListDataProvider;
 import com.vaadin.flow.router.PageTitle;
 import com.vaadin.flow.router.Route;
-import com.vaadin.flow.server.VaadinSession;
 import org.springframework.data.domain.Sort;
 
 import java.util.*;
@@ -43,6 +42,7 @@ public class PrefixView extends VerticalLayout {
     private ListDataProvider<PrefixEntity> dataProvider = new ListDataProvider<>(new ArrayList<>());
     private Grid<PrefixEntity> prefixEntityGrid;
     public static Button addButton = new Button();
+    Map<Integer, String> setidToDescription;
 
     public PrefixView(PrefixRepository prefixRepository, DispatcherRepository dispatcherRepository, AuditRepository auditRepository) {
         this.prefixRepository = prefixRepository;
@@ -55,19 +55,12 @@ public class PrefixView extends VerticalLayout {
             return;
         }
 
-        Map<Integer, String> setidToDescription = dispatcherRepository.findAll().stream()
-                .collect(Collectors.toMap(
-                        DispatcherEntity::getSetid,
-                        DispatcherEntity::getDescription,
-                        (a, b) -> a
-                ));
-
         prefixEntityGrid = new Grid<>(PrefixEntity.class, false);
         prefixEntityGrid.getStyle().set("height", "80vh");
 
-        addButton = createPrefixButton(prefixRepository, auditRepository);
+        addButton = createPrefixButton(prefixRepository, auditRepository, dispatcherRepository);
 
-        setupDbContext();
+        setupDbContext(dispatcherRepository);
 
         List<PrefixEntity> items = prefixRepository.findAll(Sort.by("id"));
         dataProvider = new ListDataProvider<>(items);
@@ -101,9 +94,14 @@ public class PrefixView extends VerticalLayout {
 
         prefixEntityGrid.addColumn(e -> {
                     String desc = setidToDescription.get(e.getSetid());
+
+                    if (desc != null) {
+                        desc = desc.replaceAll("[_\\d]", "");
+                    }
+
                     return desc == null
                             ? String.valueOf(e.getSetid())
-                            : desc + " (" + e.getSetid() + ")";
+                            : desc + " (setid: " + e.getSetid() + ")";
                 })
                 .setHeader("SetID")
                 .setWidth("20%")
@@ -131,7 +129,7 @@ public class PrefixView extends VerticalLayout {
                 .setResizable(true);
 
         prefixEntityGrid.addComponentColumn(prefixEntity -> {
-                    Button editButton = editPrefixButton(prefixRepository, prefixEntity, auditRepository);
+                    Button editButton = editPrefixButton(prefixRepository, prefixEntity, auditRepository, dispatcherRepository);
                     editButton.addThemeVariants(ButtonVariant.LUMO_WARNING);
                     editButton.getElement().getStyle()
                             .set("font-size", "20px");
@@ -150,7 +148,7 @@ public class PrefixView extends VerticalLayout {
                 .setFlexGrow(0);
 
         prefixEntityGrid.addComponentColumn(prefixEntity -> {
-                    Button deleteButton = deletePrefixButton(prefixRepository, prefixEntity, auditRepository);
+                    Button deleteButton = deletePrefixButton(prefixRepository, prefixEntity, auditRepository, dispatcherRepository);
                     deleteButton.addThemeVariants(ButtonVariant.LUMO_ERROR);
                     deleteButton.getElement().getStyle()
                             .set("font-size", "20px");
@@ -187,7 +185,11 @@ public class PrefixView extends VerticalLayout {
         return filterField;
     }
 
-    private Button createPrefixButton(PrefixRepository prefixRepository, AuditRepository auditRepository) {
+    private Button createPrefixButton(
+            PrefixRepository prefixRepository,
+            AuditRepository auditRepository,
+            DispatcherRepository dispatcherRepository
+    ) {
         Dialog dialog = new Dialog();
         dialog.setHeaderTitle("New entity");
 
@@ -222,7 +224,7 @@ public class PrefixView extends VerticalLayout {
             }
 
             try {
-                setupDbContext();
+                setupDbContext(dispatcherRepository);
                 PrefixEntity result = createPrefix(prefixRepository, regex, setid, stripCheckbox.getValue(), stripCharsField.getValue(), description);
                 addAuditEntity(auditRepository, "ADD", result.toString());
 
@@ -232,7 +234,7 @@ public class PrefixView extends VerticalLayout {
                 Notification.show(exception.toString(), 5000, Notification.Position.BOTTOM_END)
                         .addThemeVariants(NotificationVariant.LUMO_ERROR);
             }
-            refreshGrid();
+            refreshGrid(dispatcherRepository);
         });
         saveButton.addThemeVariants(ButtonVariant.LUMO_PRIMARY);
         Button cancelButton = new Button("Отмена", e -> {
@@ -252,7 +254,12 @@ public class PrefixView extends VerticalLayout {
         return addPrefixButton;
     }
 
-    private Button editPrefixButton(PrefixRepository prefixRepository, PrefixEntity prefix, AuditRepository auditRepository) {
+    private Button editPrefixButton(
+            PrefixRepository prefixRepository,
+            PrefixEntity prefix,
+            AuditRepository auditRepository,
+            DispatcherRepository dispatcherRepository
+    ) {
         Dialog dialog = new Dialog();
         dialog.setHeaderTitle("Edit entity");
 
@@ -293,7 +300,7 @@ public class PrefixView extends VerticalLayout {
             }
 
             try {
-                setupDbContext();
+                setupDbContext(dispatcherRepository);
                 addAuditEntity(auditRepository, "EDIT (OLD)", prefix.toString());
                 Optional<PrefixEntity> result = editPrefix(
                         prefixRepository, prefix.getId(), regex, setid, stripCheckbox.getValue(), stripCharsField.getValue(), description);
@@ -305,7 +312,7 @@ public class PrefixView extends VerticalLayout {
                 Notification.show(exception.toString(), 5000, Notification.Position.BOTTOM_END)
                         .addThemeVariants(NotificationVariant.LUMO_ERROR);
             }
-            refreshGrid();
+            refreshGrid(dispatcherRepository);
             dialog.close();
         });
         saveButton.addThemeVariants(ButtonVariant.LUMO_PRIMARY);
@@ -322,7 +329,12 @@ public class PrefixView extends VerticalLayout {
         return editPrefixButton;
     }
 
-    private Button deletePrefixButton(PrefixRepository prefixRepository, PrefixEntity prefix, AuditRepository auditRepository) {
+    private Button deletePrefixButton(
+            PrefixRepository prefixRepository,
+            PrefixEntity prefix,
+            AuditRepository auditRepository,
+            DispatcherRepository dispatcherRepository
+    ) {
         Dialog dialog = new Dialog();
         dialog.setHeaderTitle("Delete entity");
 
@@ -334,10 +346,10 @@ public class PrefixView extends VerticalLayout {
         dialogLayout.add(text);
 
         Button deleteButton = new Button("Удалить", e -> {
-            setupDbContext();
+            setupDbContext(dispatcherRepository);
             addAuditEntity(auditRepository, "DELETE", prefix.toString());
             deletePrefix(prefixRepository, prefix.getId());
-            refreshGrid();
+            refreshGrid(dispatcherRepository);
             dialog.close();
             Notification.show("Запись успешно удалена", 5000, Notification.Position.BOTTOM_END)
                     .addThemeVariants(NotificationVariant.LUMO_SUCCESS);
@@ -357,15 +369,23 @@ public class PrefixView extends VerticalLayout {
         return deletePrefixButton;
     }
 
-    private void setupDbContext() {
+    private void setupDbContext(DispatcherRepository dispatcherRepository) {
         Object value = ComponentUtil.getData(UI.getCurrent(), "selectedDb");
         String db = value != null ? value.toString() : null;
         if (db != null) {
             DatabaseContextHolder.set(db);
         }
+
+        setidToDescription = dispatcherRepository.findAll().stream()
+                .collect(Collectors.toMap(
+                        DispatcherEntity::getSetid,
+                        DispatcherEntity::getDescription,
+                        (a, b) -> a
+                ));
     }
 
-    private void refreshGrid() {
+    private void refreshGrid(DispatcherRepository dispatcherRepository) {
+//        setupDbContext(dispatcherRepository);
         List<PrefixEntity> updatedItems = prefixRepository.findAll(Sort.by("id"));
         dataProvider.getItems().clear();
         dataProvider.getItems().addAll(updatedItems);

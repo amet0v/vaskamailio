@@ -45,6 +45,7 @@ public class RouterView extends VerticalLayout {
     private CallbackDataProvider<RouterEntity, String> dataProvider;
     private Grid<RouterEntity> routerEntityGrid;
     public static Button addButton = new Button();
+    Map<Integer, String> setidToDescription;
 
     public RouterView(RouterRepository routerRepository, DispatcherRepository dispatcherRepository, AuditRepository auditRepository) {
         this.routerRepository = routerRepository;
@@ -57,19 +58,12 @@ public class RouterView extends VerticalLayout {
             return;
         }
 
-        Map<Integer, String> setidToDescription = dispatcherRepository.findAll().stream()
-                .collect(Collectors.toMap(
-                        DispatcherEntity::getSetid,
-                        DispatcherEntity::getDescription,
-                        (a, b) -> a
-                ));
-
         routerEntityGrid = new Grid<>(RouterEntity.class, false);
         routerEntityGrid.getStyle().set("height", "80vh");
 
-        addButton = createRouteButton(routerRepository, auditRepository);
+        addButton = createRouteButton(routerRepository, auditRepository, dispatcherRepository);
 
-        setupDbContext();
+        setupDbContext(dispatcherRepository);
 
         List<RouterEntity> result = routerRepository.findAll(Sort.by("id"));
         dataProvider = DataProvider.fromFilteringCallbacks(
@@ -87,7 +81,7 @@ public class RouterView extends VerticalLayout {
         routerEntityGrid.setDataProvider(dataProvider);
         routerEntityGrid.setItems(result);
 
-        HorizontalLayout filterLayout = getFilterLayout(routerRepository);
+        HorizontalLayout filterLayout = getFilterLayout(routerRepository, dispatcherRepository);
 
         HorizontalLayout horizontalLayout = new HorizontalLayout();
         horizontalLayout.setWidthFull();
@@ -129,9 +123,14 @@ public class RouterView extends VerticalLayout {
 
         routerEntityGrid.addColumn(e -> {
                     String desc = setidToDescription.get(Integer.valueOf(e.getSetid()));
+
+                    if (desc != null) {
+                        desc = desc.replaceAll("[_\\d]", "");
+                    }
+
                     return desc == null
                             ? String.valueOf(e.getSetid())
-                            : desc + " (" + e.getSetid() + ")";
+                            : desc + " (setid: " + e.getSetid() + ")";
                 })
                 .setHeader("SetID")
                 .setWidth("20%")
@@ -145,7 +144,7 @@ public class RouterView extends VerticalLayout {
                 .setResizable(true);
 
         routerEntityGrid.addComponentColumn(routerEntity -> {
-                    Button editButton = editRouteButton(routerRepository, routerEntity, auditRepository);
+                    Button editButton = editRouteButton(routerRepository, routerEntity, auditRepository, dispatcherRepository);
                     editButton.addThemeVariants(ButtonVariant.LUMO_WARNING);
                     editButton.getElement().getStyle()
                             .set("font-size", "20px");
@@ -164,7 +163,7 @@ public class RouterView extends VerticalLayout {
                 .setFlexGrow(0);
 
         routerEntityGrid.addComponentColumn(routerEntity -> {
-                    Button deleteButton = deleteRouteButton(routerRepository, routerEntity, auditRepository);
+                    Button deleteButton = deleteRouteButton(routerRepository, routerEntity, auditRepository, dispatcherRepository);
                     deleteButton.addThemeVariants(ButtonVariant.LUMO_ERROR);
                     deleteButton.getElement().getStyle()
                             .set("font-size", "20px");
@@ -186,7 +185,10 @@ public class RouterView extends VerticalLayout {
         routerEntityGrid.addThemeVariants(GridVariant.LUMO_ROW_STRIPES);
     }
 
-    private HorizontalLayout getFilterLayout(RouterRepository repository) {
+    private HorizontalLayout getFilterLayout(
+            RouterRepository repository,
+            DispatcherRepository dispatcherRepository
+    ) {
         HorizontalLayout filterLayout = new HorizontalLayout();
 
         TextField didField = new TextField();
@@ -202,7 +204,7 @@ public class RouterView extends VerticalLayout {
         descField.setPrefixComponent(new Icon("lumo", "search"));
 
         Button searchButton = new Button("Поиск", e -> {
-            setupDbContext();
+            setupDbContext(dispatcherRepository);
 
             String did = didField.isEmpty() ? null : didField.getValue();
             String setid = setidField.isEmpty() ? null : setidField.getValue();
@@ -239,7 +241,11 @@ public class RouterView extends VerticalLayout {
         return filterLayout;
     }
 
-    private Button createRouteButton(RouterRepository routerRepository, AuditRepository auditRepository) {
+    private Button createRouteButton(
+            RouterRepository routerRepository,
+            AuditRepository auditRepository,
+            DispatcherRepository dispatcherRepository
+    ) {
         Dialog dialog = new Dialog();
         dialog.setHeaderTitle("New entity");
 
@@ -266,7 +272,7 @@ public class RouterView extends VerticalLayout {
             }
 
             try {
-                setupDbContext();
+                setupDbContext(dispatcherRepository);
                 RouterEntity result = createRoute(routerRepository, did, setid, description);
                 addAuditEntity(auditRepository, "ADD", result.toString());
 
@@ -276,7 +282,7 @@ public class RouterView extends VerticalLayout {
                 Notification.show(exception.toString(), 5000, Notification.Position.BOTTOM_END)
                         .addThemeVariants(NotificationVariant.LUMO_ERROR);
             }
-            refreshGrid();
+            refreshGrid(dispatcherRepository);
         });
         saveButton.addThemeVariants(ButtonVariant.LUMO_PRIMARY);
         Button cancelButton = new Button("Отмена", e -> {
@@ -297,7 +303,12 @@ public class RouterView extends VerticalLayout {
         return addRouteButton;
     }
 
-    private Button editRouteButton(RouterRepository routerRepository, RouterEntity route, AuditRepository auditRepository) {
+    private Button editRouteButton(
+            RouterRepository routerRepository,
+            RouterEntity route,
+            AuditRepository auditRepository,
+            DispatcherRepository dispatcherRepository
+    ) {
         Dialog dialog = new Dialog();
         dialog.setHeaderTitle("Edit entity");
 
@@ -328,7 +339,7 @@ public class RouterView extends VerticalLayout {
             }
 
             try {
-                setupDbContext();
+                setupDbContext(dispatcherRepository);
                 addAuditEntity(auditRepository, "EDIT (OLD)", route.toString());
                 Optional<RouterEntity> result = editRoute(routerRepository, route.getId(), did, setid, description);
                 result.ifPresent(routerEntity -> addAuditEntity(auditRepository, "EDIT (NEW)", routerEntity.toString()));
@@ -339,7 +350,7 @@ public class RouterView extends VerticalLayout {
                 Notification.show(exception.toString(), 5000, Notification.Position.BOTTOM_END)
                         .addThemeVariants(NotificationVariant.LUMO_ERROR);
             }
-            refreshGrid();
+            refreshGrid(dispatcherRepository);
             dialog.close();
         });
         saveButton.addThemeVariants(ButtonVariant.LUMO_PRIMARY);
@@ -356,7 +367,12 @@ public class RouterView extends VerticalLayout {
         return editRouteButton;
     }
 
-    private Button deleteRouteButton(RouterRepository routerRepository, RouterEntity route, AuditRepository auditRepository) {
+    private Button deleteRouteButton(
+            RouterRepository routerRepository,
+            RouterEntity route,
+            AuditRepository auditRepository,
+            DispatcherRepository dispatcherRepository
+    ) {
         Dialog dialog = new Dialog();
         dialog.setHeaderTitle("Delete entity");
 
@@ -368,10 +384,10 @@ public class RouterView extends VerticalLayout {
         dialogLayout.add(text);
 
         Button deleteButton = new Button("Удалить", e -> {
-            setupDbContext();
+            setupDbContext(dispatcherRepository);
             addAuditEntity(auditRepository, "DELETE", route.toString());
             deleteRoute(routerRepository, route.getId());
-            refreshGrid();
+            refreshGrid(dispatcherRepository);
             dialog.close();
             Notification.show("Запись успешно удалена", 5000, Notification.Position.BOTTOM_END)
                     .addThemeVariants(NotificationVariant.LUMO_SUCCESS);
@@ -401,16 +417,23 @@ public class RouterView extends VerticalLayout {
         setidField.setMin(0);
     }
 
-    private void setupDbContext() {
+    private void setupDbContext(DispatcherRepository dispatcherRepository) {
         Object value = ComponentUtil.getData(UI.getCurrent(), "selectedDb");
         String db = value != null ? value.toString() : null;
         if (db != null) {
             DatabaseContextHolder.set(db);
         }
+
+        setidToDescription = dispatcherRepository.findAll().stream()
+                .collect(Collectors.toMap(
+                        DispatcherEntity::getSetid,
+                        DispatcherEntity::getDescription,
+                        (a, b) -> a
+                ));
     }
 
-    private void refreshGrid() {
-        setupDbContext();
+    private void refreshGrid(DispatcherRepository dispatcherRepository) {
+//        setupDbContext(dispatcherRepository);
         List<RouterEntity> updated = routerRepository.findAll(Sort.by("id"));
         routerEntityGrid.setItems(updated);
         dataProvider.refreshAll();

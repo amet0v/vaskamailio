@@ -32,6 +32,9 @@ import java.util.stream.Collectors;
 @Route(value = "/cdr", layout = MainLayout.class)
 @PageTitle("Kamailio | CDR")
 public class CdrView extends VerticalLayout {
+    Map<Integer, String> setidToDescription;
+    Map<String, String> sourceToDescription;
+
     public CdrView(CdrRepository cdrRepository, DispatcherRepository dispatcherRepository) {
         Boolean isAllow = MainLayout.isAllow();
         if (!isAllow) {
@@ -39,20 +42,6 @@ public class CdrView extends VerticalLayout {
             add(notAllowedText);
             return;
         }
-
-        Map<Integer, String> setidToDescription = dispatcherRepository.findAll().stream()
-                .collect(Collectors.toMap(
-                        DispatcherEntity::getSetid,
-                        DispatcherEntity::getDescription,
-                        (a, b) -> a
-                ));
-
-        Map<String, String> sourceToDescription = dispatcherRepository.findAll().stream()
-                .collect(Collectors.toMap(
-                        DispatcherEntity::getDestination,
-                        DispatcherEntity::getDescription,
-                        (a, b) -> a
-                ));
 
         Grid<CdrEntity> cdrGrid = new Grid<>(CdrEntity.class, false);
         cdrGrid.setHeight("75vh");
@@ -69,9 +58,14 @@ public class CdrView extends VerticalLayout {
 
         cdrGrid.addColumn(cdr -> {
                     String desc = sourceToDescription.get("sip:" + cdr.getSource());
+
+                    if (desc != null) {
+                        desc = desc.replaceAll("[_\\-\\d]", "");
+                    }
+
                     return desc == null
                             ? String.valueOf(cdr.getSource())
-                            :  desc + " (" + cdr.getSource() + ")";
+                            : desc + " (" + cdr.getSource() + ")";
                 })
                 .setHeader("Source")
                 .setSortable(true)
@@ -89,9 +83,14 @@ public class CdrView extends VerticalLayout {
 
         cdrGrid.addColumn(cdr -> {
                     String desc = setidToDescription.get(cdr.getSetid());
+
+                    if (desc != null) {
+                        desc = desc.replaceAll("[_\\d]", "");
+                    }
+
                     return desc == null
                             ? String.valueOf(cdr.getSetid())
-                            :  desc + " (" + cdr.getSetid() + ")";
+                            : desc + " (setid: " + cdr.getSetid() + ")";
                 })
                 .setHeader("SetID")
                 .setSortable(true)
@@ -125,7 +124,7 @@ public class CdrView extends VerticalLayout {
                         .addThemeVariants(NotificationVariant.LUMO_ERROR);
             }
 
-            setupDbContext();
+            setupDbContext(dispatcherRepository);
 
             List<CdrEntity> items = cdrRepository.findByFieldsInTimeRange(
                     startDateTimePicker.getValue(),
@@ -157,11 +156,25 @@ public class CdrView extends VerticalLayout {
         add(cdrGrid);
     }
 
-    private void setupDbContext() {
+    private void setupDbContext(DispatcherRepository dispatcherRepository) {
         Object value = ComponentUtil.getData(UI.getCurrent(), "selectedDb");
         String db = value != null ? value.toString() : null;
         if (db != null) {
             DatabaseContextHolder.set(db);
         }
+
+        setidToDescription = dispatcherRepository.findAll().stream()
+                .collect(Collectors.toMap(
+                        DispatcherEntity::getSetid,
+                        DispatcherEntity::getDescription,
+                        (a, b) -> a
+                ));
+
+        sourceToDescription = dispatcherRepository.findAll().stream()
+                .collect(Collectors.toMap(
+                        DispatcherEntity::getDestination,
+                        DispatcherEntity::getDescription,
+                        (a, b) -> a
+                ));
     }
 }
