@@ -7,6 +7,7 @@ import com.nurtel.vaskamailio.dispatcher.repository.DispatcherRepository;
 import com.nurtel.vaskamailio.router.entity.RouterEntity;
 import com.nurtel.vaskamailio.router.repository.RouterRepository;
 import com.vaadin.flow.component.ComponentUtil;
+import com.vaadin.flow.component.Key;
 import com.vaadin.flow.component.Text;
 import com.vaadin.flow.component.UI;
 import com.vaadin.flow.component.button.Button;
@@ -188,11 +189,11 @@ public class RouterView extends VerticalLayout {
     private HorizontalLayout getFilterLayout(RouterRepository repository) {
         HorizontalLayout filterLayout = new HorizontalLayout();
 
-        IntegerField didField = new IntegerField();
+        TextField didField = new TextField();
         didField.setPlaceholder("Поиск по DID");
         didField.setPrefixComponent(new Icon("lumo", "search"));
 
-        IntegerField setidField = new IntegerField();
+        TextField setidField = new TextField();
         setidField.setPlaceholder("Поиск по SetID");
         setidField.setPrefixComponent(new Icon("lumo", "search"));
 
@@ -203,8 +204,8 @@ public class RouterView extends VerticalLayout {
         Button searchButton = new Button("Поиск", e -> {
             setupDbContext();
 
-            String did = didField.isEmpty() ? null : didField.getValue().toString();
-            String setid = setidField.isEmpty() ? null : setidField.getValue().toString();
+            String did = didField.isEmpty() ? null : didField.getValue();
+            String setid = setidField.isEmpty() ? null : setidField.getValue();
             String description = descField.getValue();
 
             // Пустые значения превращаем в null
@@ -231,6 +232,8 @@ public class RouterView extends VerticalLayout {
             routerEntityGrid.setItems(result);
         });
         searchButton.addThemeVariants(ButtonVariant.LUMO_PRIMARY);
+        searchButton.addClickShortcut(Key.ENTER);
+        searchButton.addClickShortcut(Key.NUMPAD_ENTER);
 
         filterLayout.add(didField, setidField, descField, searchButton);
         return filterLayout;

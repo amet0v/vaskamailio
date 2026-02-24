@@ -6,6 +6,7 @@ import com.nurtel.vaskamailio.db.config.DatabaseContextHolder;
 import com.nurtel.vaskamailio.dispatcher.entity.DispatcherEntity;
 import com.nurtel.vaskamailio.dispatcher.repository.DispatcherRepository;
 import com.vaadin.flow.component.ComponentUtil;
+import com.vaadin.flow.component.Key;
 import com.vaadin.flow.component.Text;
 import com.vaadin.flow.component.UI;
 import com.vaadin.flow.component.button.Button;
@@ -21,13 +22,11 @@ import com.vaadin.flow.component.textfield.IntegerField;
 import com.vaadin.flow.component.textfield.TextField;
 import com.vaadin.flow.router.PageTitle;
 import com.vaadin.flow.router.Route;
-import com.vaadin.flow.server.VaadinSession;
 
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
-import java.util.Optional;
 import java.util.stream.Collectors;
 
 @Route(value = "/cdr", layout = MainLayout.class)
@@ -142,6 +141,8 @@ public class CdrView extends VerticalLayout {
         });
         selectCdrButton.addThemeVariants(ButtonVariant.LUMO_PRIMARY);
         selectCdrButton.getStyle().set("margin-top", "35px");
+        selectCdrButton.addClickShortcut(Key.ENTER);
+        selectCdrButton.addClickShortcut(Key.NUMPAD_ENTER);
 
         filterLayout.add(sourceField, cidField, didField, setidField, selectCdrButton);
 

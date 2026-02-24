@@ -3,6 +3,7 @@ package com.nurtel.vaskamailio.view;
 import com.nurtel.vaskamailio.audit.entity.AuditEntity;
 import com.nurtel.vaskamailio.audit.repository.AuditRepository;
 import com.nurtel.vaskamailio.cdr.entity.CdrEntity;
+import com.vaadin.flow.component.Key;
 import com.vaadin.flow.component.Text;
 import com.vaadin.flow.component.button.Button;
 import com.vaadin.flow.component.button.ButtonVariant;
@@ -115,6 +116,8 @@ public class AuditView extends VerticalLayout {
         });
         selectButton.addThemeVariants(ButtonVariant.LUMO_PRIMARY);
         selectButton.getStyle().set("margin-top", "35px");
+        selectButton.addClickShortcut(Key.ENTER);
+        selectButton.addClickShortcut(Key.NUMPAD_ENTER);
 
         filterLayout.add(startDateTimePicker, endDateTimePicker, usernameField, serverField, actionField, descriptionField, selectButton);
 
