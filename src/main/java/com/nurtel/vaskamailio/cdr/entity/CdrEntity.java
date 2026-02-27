@@ -31,4 +31,7 @@ public class CdrEntity {
 
     @Column(name = "setid")
     private Integer setid;
+
+    @Column(name = "reason")
+    private String reason;
 }

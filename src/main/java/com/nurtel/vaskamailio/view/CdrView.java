@@ -60,7 +60,7 @@ public class CdrView extends VerticalLayout {
                     String desc = sourceToDescription.get("sip:" + cdr.getSource());
 
                     if (desc != null) {
-                        desc = desc.replaceAll("[_\\-\\d]", "");
+                        desc = desc.replaceAll("[_\\d]", "");
                     }
 
                     return desc == null
@@ -93,6 +93,11 @@ public class CdrView extends VerticalLayout {
                             : desc + " (setid: " + cdr.getSetid() + ")";
                 })
                 .setHeader("SetID")
+                .setSortable(true)
+                .setResizable(true);
+
+        cdrGrid.addColumn(CdrEntity::getReason)
+                .setHeader("Reason")
                 .setSortable(true)
                 .setResizable(true);
 
