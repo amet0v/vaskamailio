@@ -4,6 +4,7 @@ import com.nurtel.vaskamailio.host.entity.HostEntity;
 import com.nurtel.vaskamailio.host.repository.HostRepository;
 import org.springframework.stereotype.Service;
 
+import java.util.List;
 import java.util.Optional;
 
 @Service
@@ -59,15 +60,21 @@ public class HostService {
         String[] parts = destination.split(":");
         if (parts.length >= 3) {
             return parts[1];
-        }
-        else {
+        } else {
             return destination;
         }
     }
 
-    public static HostEntity getHostByIp(HostRepository hostRepository, String ip){
-        Optional<HostEntity> optionalHost = hostRepository.findByIp(ip);
-        if (optionalHost.isPresent()) return optionalHost.get();
-        else throw new NullPointerException(String.format("Хост с айпи %s не найден в ht_hosts", ip));
+    public static HostEntity getHostByIp(HostRepository hostRepository, String ip) {
+        List<Optional<HostEntity>> optionalHostList = hostRepository.findByIp(ip);
+
+        if (optionalHostList.isEmpty()) {
+            throw new RuntimeException(String.format("Хост с айпи %s не найден в ht_hosts", ip));
+        }
+
+        return optionalHostList.getFirst()
+                .orElseThrow(() -> new RuntimeException(
+                        String.format("Хост с айпи %s не найден в ht_hosts", ip)
+                ));
     }
 }

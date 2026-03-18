@@ -324,16 +324,21 @@ public class DispatcherView extends VerticalLayout {
 
             try {
                 setupDbContext();
-                HostEntity host = getHostByIp(hostRepository, getIpFromDestination(dispatcherEntity.getDestination()));
-                addAuditEntity(auditRepository, "EDIT (OLD)", host.toString());
-                Optional<HostEntity> editedHost = editHost(
-                        hostRepository,
-                        host.getId(),
-                        getIpFromDestination(destination),
-                        1,
-                        description
-                );
-                editedHost.ifPresent(hostEntity -> addAuditEntity(auditRepository, "EDIT (NEW)", hostEntity.toString()));
+                try {
+                    HostEntity host = getHostByIp(hostRepository, getIpFromDestination(dispatcherEntity.getDestination()));
+                    addAuditEntity(auditRepository, "EDIT (OLD)", host.toString());
+                    Optional<HostEntity> editedHost = editHost(
+                            hostRepository,
+                            host.getId(),
+                            getIpFromDestination(destination),
+                            1,
+                            description
+                    );
+                    editedHost.ifPresent(hostEntity -> addAuditEntity(auditRepository, "EDIT (NEW)", hostEntity.toString()));
+                } catch (Exception exception) {
+                    Notification.show("Ошибка при обновлении host: " + exception.getMessage(), 5000, Notification.Position.BOTTOM_END)
+                            .addThemeVariants(NotificationVariant.LUMO_ERROR);
+                }
 
                 addAuditEntity(auditRepository, "EDIT (OLD)", dispatcherEntity.toString());
                 Optional<DispatcherEntity> editedEntity = editDispatcherEntity(
