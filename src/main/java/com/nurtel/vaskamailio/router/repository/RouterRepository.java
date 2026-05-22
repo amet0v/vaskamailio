@@ -29,4 +29,6 @@ public interface RouterRepository extends JpaRepository<RouterEntity, Long>{
             @Param("setid") String setid,
             @Param("description") String description
     );
+
+    Optional<RouterEntity> findByDid(String did);
 }

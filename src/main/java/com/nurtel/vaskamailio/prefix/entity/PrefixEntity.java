@@ -16,7 +16,7 @@ public class PrefixEntity {
     private Long id;
 
     @Column(name = "regex")
-    private String regex;
+    private String pattern;
 
     @Column(name = "setid")
     private Integer setid;
@@ -34,7 +34,7 @@ public class PrefixEntity {
     public String toString() {
         return "RegExEntity{" +
                 "id=" + id +
-                ", regex='" + regex + '\'' +
+                ", regex='" + pattern + '\'' +
                 ", setid=" + setid +
                 ", strip=" + strip +
                 ", stripChars=" + stripChars +

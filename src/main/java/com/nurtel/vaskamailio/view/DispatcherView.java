@@ -246,8 +246,8 @@ public class DispatcherView extends VerticalLayout {
                 addAuditEntity(auditRepository, "ADD", host.toString());
                 Notification.show("Запись успешно создана", 5000, Notification.Position.BOTTOM_END)
                         .addThemeVariants(NotificationVariant.LUMO_SUCCESS);
-            } catch (NumberFormatException | NullPointerException exception) {
-                Notification.show(exception.toString(), 5000, Notification.Position.BOTTOM_END)
+            } catch (RuntimeException exception) {
+                Notification.show(exception.getMessage(), 5000, Notification.Position.BOTTOM_END)
                         .addThemeVariants(NotificationVariant.LUMO_ERROR);
             }
             refreshGrid();
@@ -355,8 +355,8 @@ public class DispatcherView extends VerticalLayout {
 
                 Notification.show("Запись успешно изменена", 5000, Notification.Position.BOTTOM_END)
                         .addThemeVariants(NotificationVariant.LUMO_SUCCESS);
-            } catch (NumberFormatException | NullPointerException exception) {
-                Notification.show(exception.toString(), 5000, Notification.Position.BOTTOM_END)
+            } catch (RuntimeException exception) {
+                Notification.show(exception.getMessage(), 5000, Notification.Position.BOTTOM_END)
                         .addThemeVariants(NotificationVariant.LUMO_ERROR);
             }
 

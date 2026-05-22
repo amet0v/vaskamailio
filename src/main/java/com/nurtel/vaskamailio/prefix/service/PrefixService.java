@@ -3,6 +3,7 @@ package com.nurtel.vaskamailio.prefix.service;
 import com.nurtel.vaskamailio.prefix.entity.PrefixEntity;
 import com.nurtel.vaskamailio.prefix.repository.PrefixRepository;
 
+import java.util.Objects;
 import java.util.Optional;
 
 public class PrefixService {
@@ -14,8 +15,14 @@ public class PrefixService {
             Integer stripChars,
             String description
     ) {
+        regex = regex.strip();
+
+        if (prefixRepository.findByPattern(regex).isPresent()) {
+            throw new RuntimeException("Запись с таким regex уже существует");
+        }
+
         PrefixEntity prefix = PrefixEntity.builder()
-                .regex(regex)
+                .pattern(regex)
                 .setid(setid)
                 .strip(strip)
                 .stripChars(stripChars)
@@ -35,11 +42,17 @@ public class PrefixService {
             Integer stripChars,
             String description
     ) {
+        regex = regex.strip();
+
+        if (prefixRepository.findByPattern(regex).isPresent() && !Objects.equals(prefixRepository.findByPattern(regex).get().getId(), id)) {
+            throw new RuntimeException("Запись с таким regex уже существует");
+        }
+
         Optional<PrefixEntity> optionalPrefix = prefixRepository.findById(id);
         if (optionalPrefix.isEmpty()) return Optional.empty();
         PrefixEntity prefix = optionalPrefix.get();
 
-        prefix.setRegex(regex);
+        prefix.setPattern(regex);
         prefix.setSetid(setid);
         prefix.setStrip(strip);
         prefix.setStripChars(stripChars);

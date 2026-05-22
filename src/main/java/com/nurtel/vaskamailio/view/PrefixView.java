@@ -85,7 +85,7 @@ public class PrefixView extends VerticalLayout {
                 .setSortable(true)
                 .setResizable(true);
 
-        prefixEntityGrid.addColumn(PrefixEntity::getRegex)
+        prefixEntityGrid.addColumn(PrefixEntity::getPattern)
                 .setHeader("RegEx")
 //                .setWidth("20%")
 //                .setFlexGrow(0)
@@ -179,7 +179,7 @@ public class PrefixView extends VerticalLayout {
         filterField.addValueChangeListener(e ->
                 dataProvider.setFilter(prefix -> {
                     String value = e.getValue().toLowerCase();
-                    return (prefix.getRegex() != null && prefix.getRegex().toLowerCase().contains(value))
+                    return (prefix.getPattern() != null && prefix.getPattern().toLowerCase().contains(value))
                             || (prefix.getDescription() != null && prefix.getDescription().toLowerCase().contains(value));
                 }));
         return filterField;
@@ -230,8 +230,8 @@ public class PrefixView extends VerticalLayout {
 
                 Notification.show("Запись успешно создана", 5000, Notification.Position.BOTTOM_END)
                         .addThemeVariants(NotificationVariant.LUMO_SUCCESS);
-            } catch (NumberFormatException exception) {
-                Notification.show(exception.toString(), 5000, Notification.Position.BOTTOM_END)
+            } catch (RuntimeException exception) {
+                Notification.show(exception.getMessage(), 5000, Notification.Position.BOTTOM_END)
                         .addThemeVariants(NotificationVariant.LUMO_ERROR);
             }
             refreshGrid(dispatcherRepository);
@@ -280,7 +280,7 @@ public class PrefixView extends VerticalLayout {
         stripCharsField.setMin(0);
 //        customizeFields(didField, setidField, descriptionField);
 
-        regexField.setValue(prefix.getRegex() == null ? "" : prefix.getRegex());
+        regexField.setValue(prefix.getPattern() == null ? "" : prefix.getPattern());
         setidField.setValue(prefix.getSetid() == null ? 0 : prefix.getSetid());
         stripCheckbox.setValue(prefix.getStrip());
         stripCharsField.setValue(prefix.getStripChars() == null ? 0 : prefix.getStripChars());
@@ -308,8 +308,8 @@ public class PrefixView extends VerticalLayout {
 
                 Notification.show("Запись успешно изменена", 5000, Notification.Position.BOTTOM_END)
                         .addThemeVariants(NotificationVariant.LUMO_SUCCESS);
-            } catch (NumberFormatException exception) {
-                Notification.show(exception.toString(), 5000, Notification.Position.BOTTOM_END)
+            } catch (RuntimeException exception) {
+                Notification.show(exception.getMessage(), 5000, Notification.Position.BOTTOM_END)
                         .addThemeVariants(NotificationVariant.LUMO_ERROR);
             }
             refreshGrid(dispatcherRepository);
