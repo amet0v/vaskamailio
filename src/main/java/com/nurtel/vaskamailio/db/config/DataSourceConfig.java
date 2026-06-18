@@ -52,7 +52,7 @@ public class DataSourceConfig {
         Map<Object, Object> targetDataSources = new HashMap<>();
         for (Map<String, Object> row : rows) {
             DataSource ds = DataSourceBuilder.create()
-                    .url("jdbc:postgresql://" + row.get("ip") + ":5432/kamailiodb")
+                    .url("jdbc:postgresql://" + row.get("ip")) //+ ":5432/kamailiodb")
                     .username((String) row.get("login"))
                     .password((String) row.get("password"))
                     .driverClassName("org.postgresql.Driver")

@@ -41,7 +41,6 @@ public class PrefixView extends VerticalLayout {
     private final AuditRepository auditRepository;
     private ListDataProvider<PrefixEntity> dataProvider = new ListDataProvider<>(new ArrayList<>());
     private Grid<PrefixEntity> prefixEntityGrid;
-    public static Button addButton = new Button();
     Map<Integer, String> setidToDescription;
 
     public PrefixView(PrefixRepository prefixRepository, DispatcherRepository dispatcherRepository, AuditRepository auditRepository) {
@@ -58,7 +57,7 @@ public class PrefixView extends VerticalLayout {
         prefixEntityGrid = new Grid<>(PrefixEntity.class, false);
         prefixEntityGrid.getStyle().set("height", "80vh");
 
-        addButton = createPrefixButton(prefixRepository, auditRepository, dispatcherRepository);
+        Button addButton = createPrefixButton(prefixRepository, auditRepository, dispatcherRepository);
 
         setupDbContext(dispatcherRepository);
 

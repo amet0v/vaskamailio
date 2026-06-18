@@ -132,7 +132,7 @@ public class DbView extends VerticalLayout {
                     .setResizable(true);
 
             dbEntityGrid.addColumn(DbEntity::getIp)
-                    .setHeader("IP")
+                    .setHeader("IP:Port/DB")
                     .setSortable(true)
                     .setResizable(true);
 
