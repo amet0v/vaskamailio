@@ -75,11 +75,11 @@ public class ManagementView extends VerticalLayout {
         hl.add(new Html("<h4>" + db.getName() + "</h4>"));
 
         hl.add(new Button("Reload routes", VaadinIcon.REFRESH.create(),
-                e -> runCommandOn(db.getIp(), "sudo /usr/sbin/kamcmd htable.reload routes", auditRepository)));
+                e -> runCommandOn(db.getIp().split(":")[0], "sudo /usr/sbin/kamcmd htable.reload routes", auditRepository)));
         hl.add(new Button("Reload hosts", VaadinIcon.REFRESH.create(),
-                e -> runCommandOn(db.getIp(), "sudo /usr/sbin/kamcmd htable.reload hosts", auditRepository)));
+                e -> runCommandOn(db.getIp().split(":")[0], "sudo /usr/sbin/kamcmd htable.reload hosts", auditRepository)));
         hl.add(new Button("Reload dispatcher", VaadinIcon.REFRESH.create(),
-                e -> runCommandOn(db.getIp(), "sudo /usr/sbin/kamcmd dispatcher.reload", auditRepository)));
+                e -> runCommandOn(db.getIp().split(":")[0], "sudo /usr/sbin/kamcmd dispatcher.reload", auditRepository)));
 
         Button restartBtn = new Button("Restart kamailio", VaadinIcon.POWER_OFF.create(), e -> {
             Dialog dialog = new Dialog();
@@ -91,7 +91,7 @@ public class ManagementView extends VerticalLayout {
 
             Button confirmButton = new Button("Перезагрузить", ev -> {
                 dialog.close();
-                runCommandOn(db.getIp(), "sudo /bin/systemctl restart kamailio.service", auditRepository);
+                runCommandOn(db.getIp().split(":")[0], "sudo /bin/systemctl restart kamailio.service", auditRepository);
             });
 
             Button cancelButton = new Button("Отмена", ev -> dialog.close());
@@ -103,7 +103,7 @@ public class ManagementView extends VerticalLayout {
         hl.add(restartBtn);
 
         hl.add(new Button("Kamailio status", VaadinIcon.CHECK_CIRCLE_O.create(),
-                e -> runCommandOn(db.getIp(), "sudo /bin/systemctl status kamailio.service", auditRepository)));
+                e -> runCommandOn(db.getIp().split(":")[0], "sudo /bin/systemctl status kamailio.service", auditRepository)));
 
         return hl;
     }
@@ -114,8 +114,11 @@ public class ManagementView extends VerticalLayout {
 
         String remoteOutput = runRemoteCommandWithPassword(host, sshLogin, sshPassword, command);
         combinedOutput.append("🌐 Удалённый результат:\n").append(remoteOutput);
+
         addAuditEntity(auditRepository, "COMMAND", command + " on " + host);
 
+        Notification.show("Удалённый результат: " + remoteOutput, 5000, Notification.Position.BOTTOM_END)
+                .addThemeVariants(NotificationVariant.LUMO_SUCCESS);
         outputArea.setValue(combinedOutput.toString());
     }
 

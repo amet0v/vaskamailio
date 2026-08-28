@@ -29,9 +29,9 @@ public class DispatcherService {
                 .description(description)
                 .build();
 
-        if (dispatcherRepository.findByDestination(destination).isPresent()) {
-            throw new RuntimeException("Запись с таким destination уже существует");
-        }
+//        if (dispatcherRepository.findByDestination(destination).isPresent()) {
+//            throw new RuntimeException("Запись с таким destination уже существует");
+//        }
 
         dispatcherEntity = dispatcherRepository.save(dispatcherEntity);
         return dispatcherEntity;
@@ -52,9 +52,9 @@ public class DispatcherService {
         Optional<DispatcherEntity> optionalDispatcherEntity = dispatcherRepository.findById(id);
         if (optionalDispatcherEntity.isEmpty()) return Optional.empty();
 
-        if (dispatcherRepository.findByDestination(destination).isPresent() && !Objects.equals(dispatcherRepository.findByDestination(destination).get().getId(), id)) {
-            throw new RuntimeException("Запись с таким destination уже существует");
-        }
+//        if (dispatcherRepository.findByDestination(destination).isPresent() && !Objects.equals(dispatcherRepository.findByDestination(destination).get().getId(), id)) {
+//            throw new RuntimeException("Запись с таким destination уже существует");
+//        }
 
         DispatcherEntity dispatcherEntity = optionalDispatcherEntity.get();
 
